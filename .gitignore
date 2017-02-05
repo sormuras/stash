@@ -1,0 +1,19 @@
+# Annotation processing
+src/test/generated/
+
+# Gradle
+.gradle
+build/
+
+# Eclipse
+bin/
+.classpath
+.project
+.settings/
+
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+*.uml
