@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+}
+
+apply from: 'gradle/format.gradle'
+apply from: 'gradle/jupiter.gradle'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
+
+dependencies {
+    // compile  group: 'javax.annotation',   name: 'jsr250-api',             version: '1.0'
+    compile     group: 'de.sormuras',        name: 'beethoven',              version: "${beethovenVersion}"
+    testCompile group: 'org.junit.jupiter',  name: 'junit-jupiter-api',      version: "${junitJupiterVersion}"
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.4-rc-1'
+}

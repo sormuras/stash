@@ -1,0 +1,25 @@
+configurations {
+    format
+}
+
+dependencies {
+    format "com.google.googlejavaformat:google-java-format:${googleFormatVersion}"
+}
+
+task downloadFormat(type: Copy) {
+    from configurations.format
+    into "$buildDir/format"
+}
+
+task runFormat(type: JavaExec) {
+
+    dependsOn(downloadFormat)
+
+    classpath = fileTree(dir: "$buildDir/format", include: '*.jar')
+
+    main 'com.google.googlejavaformat.java.Main'
+
+    args += '--replace'
+    args += sourceSets.main.allJava.files
+    args += sourceSets.test.allJava.files
+}

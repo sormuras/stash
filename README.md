@@ -1,2 +1,2 @@
 # stash
-Java ByteBuffer Store
+Java interface-driven ByteBuffer-based persistence layer
