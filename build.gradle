@@ -11,7 +11,6 @@ repositories {
 }
 
 dependencies {
-    // compile  group: 'javax.annotation',   name: 'jsr250-api',             version: '1.0'
     compile     group: 'de.sormuras',        name: 'beethoven',              version: "${beethovenVersion}"
     testCompile group: 'org.junit.jupiter',  name: 'junit-jupiter-api',      version: "${junitJupiterVersion}"
 }
