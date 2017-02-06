@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 
 class StashTests {
 
-	@Test void stashIsInterface() {
-		assertTrue(Stash.class.isInterface());
-	}
-
+  @Test
+  void stashIsInterface() {
+    assertTrue(Stash.class.isInterface());
+  }
 }
