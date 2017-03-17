@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
-import readme.World;
 
+@Stash.Interface
 class StashTests {
 
   @Test
@@ -16,7 +16,7 @@ class StashTests {
 
   @Test
   void defaultInterfaceAnnotationValues() {
-    Stash.Interface annotation = World.class.getAnnotation(Stash.Interface.class);
+    Stash.Interface annotation = StashTests.class.getAnnotation(Stash.Interface.class);
     assertNotNull(annotation);
     assertSame(Object.class, annotation.classExtends());
     assertTrue(annotation.verify());

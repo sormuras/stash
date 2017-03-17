@@ -1,0 +1,10 @@
+plugins {
+    id "net.ltgt.apt" version "0.9"
+}
+
+dependencies {
+    apt(project(':stash-compiler'))
+
+    // api(project(':stash-api'))
+    compile(project(':stash-compiler'))
+}

@@ -1,6 +1,3 @@
-# Annotation processing
-src/test/generated/
-
 # Gradle
 .gradle
 build/

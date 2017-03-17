@@ -9,19 +9,15 @@ dependencies {
 
 task downloadJupiter(type: Copy) {
     from configurations.jupiter
-    into "$buildDir/jupiter"
+    into "$rootDir/build/jupiter"
 }
 
-task runJupiter(type: JavaExec) {
-    dependsOn jar
-    dependsOn downloadJupiter
-
+task runJupiter(type: JavaExec, dependsOn: [jar, downloadJupiter]) {
     jvmArgs '-ea'
-    jvmArgs '-Djava.util.logging.config.file=src/test/logging.properties'
 
     classpath = project.sourceSets.test.runtimeClasspath
     classpath += fileTree(dir: "$buildDir/libs", include: "$jar.archiveName")
-    classpath += fileTree(dir: "$buildDir/jupiter", include: '*.jar')
+    classpath += fileTree(dir: "$rootDir/build/jupiter", include: '*.jar')
 
     main 'org.junit.platform.console.ConsoleLauncher'
 

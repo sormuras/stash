@@ -1,0 +1,4 @@
+dependencies {
+    api(project(':stash-api'))
+    api("de.sormuras:beethoven:$beethovenVersion")
+}

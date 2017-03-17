@@ -1,20 +1,23 @@
-plugins {
-    id 'java'
-}
-
-apply from: 'gradle/format.gradle'
-apply from: 'gradle/jupiter.gradle'
-
-repositories {
-    mavenCentral()
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-}
-
-dependencies {
-    compile     group: 'de.sormuras',        name: 'beethoven',              version: "${beethovenVersion}"
-    testCompile group: 'org.junit.jupiter',  name: 'junit-jupiter-api',      version: "${junitJupiterVersion}"
-}
-
 task wrapper(type: Wrapper) {
     gradleVersion = '3.4.1'
+}
+
+subprojects { project ->
+
+    apply plugin: 'java-library'
+    apply plugin: 'idea'
+    apply plugin: 'eclipse'
+
+    apply from: "$rootDir/gradle/format.gradle"
+    apply from: "$rootDir/gradle/jupiter.gradle"
+
+    repositories {
+        mavenCentral()
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    }
+
+    dependencies {
+        testCompile group: 'org.junit.jupiter',  name: 'junit-jupiter-api',      version: "${junitJupiterVersion}"
+    }
+
 }

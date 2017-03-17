@@ -1,18 +1,18 @@
-package readme;
+package demo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-class WorldTests {
+class DemoTests {
 
   @Test
   void worldStashIsGenerated() {
-    assertEquals("readme.WorldStash", WorldStash.class.getCanonicalName());
+    assertEquals("demo.DemoStash", DemoStash.class.getCanonicalName());
   }
 
   @Test
   void worldGuardIsGenerated() {
-    assertEquals("readme.WorldGuard", WorldGuard.class.getCanonicalName());
+    assertEquals("demo.DemoGuard", DemoGuard.class.getCanonicalName());
   }
 }

@@ -8,14 +8,12 @@ dependencies {
 
 task downloadFormat(type: Copy) {
     from configurations.format
-    into "$buildDir/format"
+    into "$rootDir/build/format"
 }
 
-task runFormat(type: JavaExec) {
+task runFormat(type: JavaExec, dependsOn: downloadFormat) {
 
-    dependsOn(downloadFormat)
-
-    classpath = fileTree(dir: "$buildDir/format", include: '*.jar')
+    classpath = fileTree(dir: "$rootDir/build/format", include: '*.jar')
 
     main 'com.google.googlejavaformat.java.Main'
 

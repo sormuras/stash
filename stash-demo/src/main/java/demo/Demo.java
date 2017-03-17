@@ -1,6 +1,6 @@
-package readme;
+package demo;
 
 import de.sormuras.stash.Stash;
 
 @Stash.Interface
-public interface World {}
+public interface Demo {}
