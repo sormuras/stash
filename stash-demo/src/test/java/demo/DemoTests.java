@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 class DemoTests {
 
   @Test
-  void worldStashIsGenerated() {
+  void generateDemoStash() {
     assertEquals("demo.DemoStash", DemoStash.class.getCanonicalName());
   }
 
   @Test
-  void worldGuardIsGenerated() {
+  void generateDemoGuard() {
     assertEquals("demo.DemoGuard", DemoGuard.class.getCanonicalName());
   }
 }
