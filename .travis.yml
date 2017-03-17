@@ -1,5 +1,21 @@
+dist: trusty
+sudo: false
+
 language: java
-jdk: oraclejdk8
+
+jdk:
+  - oraclejdk8
+  - oraclejdk9
+
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+      - oracle-java9-installer
+
+matrix:
+  allow_failures:
+    - jdk: oraclejdk9
 
 notifications:
   email:
