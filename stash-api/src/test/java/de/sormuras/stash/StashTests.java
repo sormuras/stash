@@ -6,17 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-@Stash.Interface
+@Stash
 class StashTests {
 
   @Test
-  void stashIsInterface() {
-    assertTrue(Stash.class.isInterface());
+  void stashIsAnnotation() {
+    assertTrue(Stash.class.isAnnotation());
   }
 
   @Test
-  void defaultInterfaceAnnotationValues() {
-    Stash.Interface annotation = StashTests.class.getAnnotation(Stash.Interface.class);
+  void defaultStashAnnotationValues() {
+    Stash annotation = StashTests.class.getAnnotation(Stash.class);
     assertNotNull(annotation);
     assertSame(Object.class, annotation.classExtends());
     assertTrue(annotation.verify());

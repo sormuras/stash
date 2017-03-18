@@ -11,7 +11,7 @@ class ProcessorTests {
   @Test
   void emptyInterfaceWithStashAnnotationCompiles() throws ClassNotFoundException {
     CompilationUnit terra = CompilationUnit.of("empty");
-    terra.declareInterface("Empty").addAnnotation(Stash.Interface.class);
+    terra.declareInterface("Empty").addAnnotation(Stash.class);
     Class<?> terraClass = terra.compile();
     assertEquals("empty.Empty", terraClass.getCanonicalName());
     ClassLoader loader = terraClass.getClassLoader();

@@ -20,20 +20,20 @@ import javax.tools.JavaFileObject;
 
 public class Processor extends AbstractProcessor {
 
-  protected void error(Element element, String format, Object... args) {
+  private void error(Element element, String format, Object... args) {
     processingEnv
         .getMessager()
         .printMessage(Diagnostic.Kind.ERROR, String.format(format, args), element);
   }
 
-  protected void print(String format, Object... args) {
+  private void print(String format, Object... args) {
     processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, String.format(format, args));
   }
 
   @Override
   public Set<String> getSupportedAnnotationTypes() {
     Set<String> set = new HashSet<>();
-    set.add(Stash.Interface.class.getCanonicalName());
+    set.add(Stash.class.getCanonicalName());
     return set;
   }
 
@@ -47,11 +47,11 @@ public class Processor extends AbstractProcessor {
     if (round.processingOver()) {
       return true;
     }
-    processAllStashes(round.getElementsAnnotatedWith(Stash.Interface.class));
+    processAllStashes(round.getElementsAnnotatedWith(Stash.class));
     return true;
   }
 
-  protected void processAllStashes(Set<? extends Element> stashAnnotatedElements) {
+  private void processAllStashes(Set<? extends Element> stashAnnotatedElements) {
     for (Element stashed : stashAnnotatedElements) {
       ElementKind kind = stashed.getKind();
       if (kind.isInterface()) {
@@ -64,8 +64,8 @@ public class Processor extends AbstractProcessor {
     }
   }
 
-  protected void processStashedElement(TypeElement stashed) {
-    Stash.Interface stash = stashed.getAnnotation(Stash.Interface.class);
+  private void processStashedElement(TypeElement stashed) {
+    Stash stash = stashed.getAnnotation(Stash.class);
     print("Interface %s is annotated with %s", stashed, stash);
 
     String packageName =

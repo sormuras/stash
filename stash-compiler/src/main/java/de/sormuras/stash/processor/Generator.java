@@ -11,15 +11,15 @@ import java.util.Arrays;
 import java.util.List;
 import javax.lang.model.element.Modifier;
 
-public class Generator {
+class Generator {
 
-  protected final InterfaceDeclaration interfaceDeclaration;
+  private final InterfaceDeclaration interfaceDeclaration;
 
-  public Generator(InterfaceDeclaration interfaceDeclaration) {
+  Generator(InterfaceDeclaration interfaceDeclaration) {
     this.interfaceDeclaration = interfaceDeclaration;
   }
 
-  public List<CompilationUnit> generate() {
+  List<CompilationUnit> generate() {
     String packageName = interfaceDeclaration.getCompilationUnit().getPackageName();
     CompilationUnit stashUnit = generateStash(CompilationUnit.of(packageName));
     new ImportsComposer().apply(stashUnit);
@@ -28,7 +28,7 @@ public class Generator {
   }
 
   // create compilation unit "XyzStash.java" with "class XyzStash implements Xyz {...}"
-  CompilationUnit generateStash(CompilationUnit unit) {
+  private CompilationUnit generateStash(CompilationUnit unit) {
     NormalClassDeclaration stashDeclaration =
         unit.declareClass(interfaceDeclaration.getName() + "Stash");
     stashDeclaration.setModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
@@ -61,7 +61,7 @@ public class Generator {
   }
 
   // create compilation unit "XyzGuard.java" with "class XyzGuard implements Xyz"
-  CompilationUnit generateGuard(CompilationUnit unit) {
+  private CompilationUnit generateGuard(CompilationUnit unit) {
     NormalClassDeclaration guardDeclaration =
         unit.declareClass(interfaceDeclaration.getName() + "Guard");
     guardDeclaration.setModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
