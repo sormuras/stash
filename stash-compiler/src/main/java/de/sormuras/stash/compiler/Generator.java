@@ -14,17 +14,13 @@
 package de.sormuras.stash.compiler;
 
 import de.sormuras.beethoven.Annotation;
+import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.composer.ImportsComposer;
-import de.sormuras.beethoven.unit.ClassDeclaration;
-import de.sormuras.beethoven.unit.CompilationUnit;
-import de.sormuras.beethoven.unit.InterfaceDeclaration;
+import de.sormuras.beethoven.unit.*;
 import de.sormuras.stash.Stash;
 import de.sormuras.stash.compiler.generator.StashGenerator;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.zip.CRC32;
 import javax.annotation.Generated;
 import javax.lang.model.element.Modifier;
@@ -51,7 +47,7 @@ public class Generator {
     return interfaceDeclaration;
   }
 
-  protected Annotation buildAnnotationGenerated() {
+  private Annotation buildAnnotationGenerated() {
     Annotation generated = Annotation.annotation(Generated.class);
     generated.addValue(getClass().getCanonicalName());
     generated.addValue(Stash.VERSION);
@@ -61,6 +57,23 @@ public class Generator {
       generated.addMember("comments", l -> l.add(comments));
     }
     return generated;
+  }
+
+  public String buildOtherName() {
+    return interfaceDeclaration.getName().toLowerCase(); // .toCamelCase();
+  }
+
+  protected String buildMethodHash(MethodDeclaration method) {
+    crc32.reset();
+    crc32.update(method.getName().getBytes());
+    method.getParameters().forEach(p -> crc32.update(p.getType().list().getBytes()));
+    String hash = Long.toHexString(crc32.getValue()).toUpperCase();
+    hash = ("00000000" + hash).substring(hash.length());
+    return "0x" + hash + "L";
+  }
+
+  private String buildSpawnMethodName(MethodDeclaration method, String hash) {
+    return method.getName() + "_" + hash;
   }
 
   List<CompilationUnit> generate() {
@@ -85,5 +98,67 @@ public class Generator {
     guardDeclaration.setModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
     guardDeclaration.addInterface(interfaceDeclaration.toType());
     return unit;
+  }
+
+  public Optional<MethodParameter> getTimeParameter(MethodDeclaration method) {
+    return method.getParameters().stream().filter(this::isParameterTime).findFirst();
+  }
+
+  public boolean isMethodChainable(MethodDeclaration method) {
+    return Boolean.TRUE.equals(method.getTags().get(Tag.METHOD_IS_CHAINABLE));
+  }
+
+  public boolean isMethodVolatile(MethodDeclaration method) {
+    return Boolean.TRUE.equals(method.getTags().get(Tag.METHOD_IS_VOLATILE));
+  }
+
+  public boolean isMethodReturn(MethodDeclaration method) {
+    return !method.getReturnType().isVoid();
+  }
+
+  public boolean isParameterTime(MethodParameter parameter) {
+    return Boolean.TRUE.equals(parameter.getTags().get(Tag.PARAMETER_IS_TIME));
+  }
+
+  public boolean isVerify() {
+    return interfaceAnnotation.verify();
+  }
+
+  public Listing applyCall(Listing listing, MethodDeclaration method) {
+    listing.add("this.");
+    listing.add(buildOtherName());
+    listing.add('.');
+    method.applyCall(listing);
+    listing.add(';');
+    return listing.newline();
+  }
+
+  public Listing applyCallAndReturn(Listing listing, MethodDeclaration method, String hash) {
+    boolean returns = isMethodReturn(method);
+    if (isMethodVolatile(method)) {
+      if (returns) {
+        listing.add("return ");
+      }
+      return applyCall(listing, method);
+    }
+    String result = "$$result";
+    if (returns) {
+      listing.eval("{{L}} {{$}} = ", method.getReturnType(), result);
+    }
+    if (isVerify()) {
+      listing.eval("{{$}}(){{;}}", buildSpawnMethodName(method, hash));
+    } else {
+      applyCall(listing, method);
+    }
+    // TODO Call commit();
+    if (returns) {
+      listing.add("return ").add(result);
+      if (isMethodChainable(method)) {
+        listing.eval(" == {{$}} ? this : {{$}}", buildOtherName(), result);
+      }
+      listing.add(';');
+      listing.newline();
+    }
+    return listing;
   }
 }

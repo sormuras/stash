@@ -58,8 +58,7 @@ public class StashGenerator {
 
   private FieldDeclaration createStashFieldOther() {
     Type otherType = generator.getInterfaceDeclaration().toType();
-    String otherName =
-        generator.getInterfaceDeclaration().getName().toLowerCase(); // toCamelCase();
+    String otherName = generator.buildOtherName();
     FieldDeclaration other = stashClass.declareField(otherType, otherName);
     other.setModifiers(Modifier.PRIVATE, Modifier.FINAL);
     return other;
@@ -67,6 +66,7 @@ public class StashGenerator {
 
   public NormalClassDeclaration generate() {
     generateConstructor();
+    generateRespawn();
     generateToString();
     generateImplementationMethods();
     return stashClass;
@@ -79,24 +79,23 @@ public class StashGenerator {
     constructor.declareParameter(ByteBuffer.class, buffer.getName());
     constructor.addStatement("this." + other.getName() + " = " + other.getName());
     constructor.addStatement("this." + buffer.getName() + " = " + buffer.getName());
+    //constructor.addStatement("respawn();");
   }
 
-  private void generateReplay() {
-    /*
-    protected void build(Map<Long, Summoner> map) {
-      long journalMaxIndex = buffer.getLong();
-      for (long index = 0; index < journalMaxIndex; index++) {
-        long hash = buffer.getLong();
-        Summoner runnable = map.get(hash);
-        try {
-          runnable.summon();
-        } catch (Exception e) {
-          throw new AssertionError("Summon #" + index + " (hash=" + Tool.hash(hash) + ") failed!");
-        }
-      }
-      buffer.limit(buffer.capacity());
-    }
-    */
+  private void generateRespawn() {
+    //for (long index = 0; index < buffer.getLong(); index++) {
+    //    switch (buffer.getInt()) {
+    //        case 2345890: generateRespawn();
+    //        default: throw new AssertionError(index);
+    //    }
+    //}
+    //buffer.limit(buffer.capacity());
+
+    //MethodDeclaration respawn = stashClass.declareMethod(void.class, "respawn");
+    //respawn.setModifiers(Modifier.PUBLIC);
+    //respawn.addStatement(
+    //    "for (long index = 0; index < {{$}}.getLong(); index++) {", buffer.getName());
+    //respawn.addStatement("switch(" + buffer.getName() + ".getLong()) {");
   }
 
   private void generateToString() {
