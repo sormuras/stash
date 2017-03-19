@@ -1,4 +1,4 @@
-package de.sormuras.stash.processor;
+package de.sormuras.stash.compiler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
