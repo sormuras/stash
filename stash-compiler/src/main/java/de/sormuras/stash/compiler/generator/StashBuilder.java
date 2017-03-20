@@ -22,27 +22,29 @@ import de.sormuras.beethoven.unit.NormalClassDeclaration;
 import de.sormuras.beethoven.unit.UnitTool;
 import de.sormuras.stash.compiler.Generator;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Set;
 import javax.lang.model.element.Modifier;
 
 public class StashBuilder {
 
   final Generator generator;
-  final CompilationUnit compilationUnit;
 
   final NormalClassDeclaration stashClass;
   final FieldDeclaration buffer;
+  final FieldDeclaration counter;
   final FieldDeclaration other;
 
   public StashBuilder(Generator generator, CompilationUnit compilationUnit) {
     this.generator = generator;
-    this.compilationUnit = compilationUnit;
 
-    this.stashClass = createStashClass();
+    this.stashClass = createStashClass(compilationUnit);
+    this.counter = createStashFieldCounter();
     this.buffer = createStashFieldBuffer();
     this.other = createStashFieldOther();
   }
 
-  private NormalClassDeclaration createStashClass() {
+  private NormalClassDeclaration createStashClass(CompilationUnit compilationUnit) {
     String interfaceName = generator.getInterfaceDeclaration().getName();
     NormalClassDeclaration stashClass = compilationUnit.declareClass(interfaceName + "Stash");
     stashClass.setModifiers(Modifier.PUBLIC);
@@ -53,6 +55,12 @@ public class StashBuilder {
   private FieldDeclaration createStashFieldBuffer() {
     FieldDeclaration buffer = stashClass.declareField(ByteBuffer.class, "buffer");
     buffer.setModifiers(Modifier.PRIVATE, Modifier.FINAL);
+    return buffer;
+  }
+
+  private FieldDeclaration createStashFieldCounter() {
+    FieldDeclaration buffer = stashClass.declareField(long.class, "counter");
+    buffer.setModifiers(Modifier.PRIVATE);
     return buffer;
   }
 
@@ -79,36 +87,34 @@ public class StashBuilder {
     MethodDeclaration toString = stashClass.declareMethod(String.class, "toString");
     toString.addAnnotation(Override.class);
     toString.setModifiers(Modifier.PUBLIC);
-    toString.addStatement("return this." + other.getName() + ".toString()");
+    toString.addStatement("return this.{{$}}.toString()", other.getName());
   }
 
   private void generateMethods() {
+    Set<String> hashes = new HashSet<>();
     for (MethodDeclaration interfaceMethod : generator.getInterfaceDeclaration().getMethods()) {
-      generateMethodImplementation(interfaceMethod);
-      generateMethodRespawn(interfaceMethod);
+      String hash = generator.buildMethodHash(interfaceMethod);
+      if (!hashes.add(hash)) {
+        throw new AssertionError("Method hash collision: " + interfaceMethod);
+      }
+      generateMethodImplementation(interfaceMethod, hash);
+      if (generator.isMethodVolatile(interfaceMethod)) {
+        continue;
+      }
+      generateMethodRespawn(interfaceMethod, hash);
     }
   }
 
-  private void generateMethodImplementation(MethodDeclaration interfaceMethod) {
+  private void generateMethodImplementation(MethodDeclaration interfaceMethod, String hash) {
     MethodDeclaration method = stashClass.declareMethod(UnitTool.override(interfaceMethod, true));
     method.getModifiers().remove(Modifier.DEFAULT);
-
-    method.addStatement(
-        listing -> {
-          if (!method.getReturnType().isVoid()) {
-            listing.add("return ");
-          }
-          listing.add("this." + other.getName() + ".");
-          method.applyCall(listing);
-          return listing;
-        });
+    method.setBody(new StashImplementationMethodBlock(this, interfaceMethod, hash));
   }
 
-  private void generateMethodRespawn(MethodDeclaration interfaceMethod) {
-    String hash = generator.buildMethodHash(interfaceMethod);
+  private void generateMethodRespawn(MethodDeclaration interfaceMethod, String hash) {
     String name = generator.buildSpawnMethodName(interfaceMethod, hash);
-    MethodDeclaration method = stashClass.declareMethod(void.class, name);
+    MethodDeclaration method = stashClass.declareMethod(interfaceMethod.getReturnType(), name);
     method.setModifiers(Modifier.PRIVATE);
-    method.addStatement("// TODO");
+    method.setBody(new StashSpawnMethodBlock(this, interfaceMethod));
   }
 }

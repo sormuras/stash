@@ -18,17 +18,16 @@ import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.unit.Block;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.MethodParameter;
-import de.sormuras.stash.compiler.Generator;
 import de.sormuras.stash.compiler.Stashlet;
 import java.util.Optional;
 
 public class StashSpawnMethodBlock extends Block {
 
-  final Generator generator;
-  final MethodDeclaration method;
+  private final StashBuilder builder;
+  private final MethodDeclaration method;
 
-  StashSpawnMethodBlock(Generator generator, MethodDeclaration method) {
-    this.generator = generator;
+  StashSpawnMethodBlock(StashBuilder builder, MethodDeclaration method) {
+    this.builder = builder;
     this.method = method;
   }
 
@@ -36,12 +35,12 @@ public class StashSpawnMethodBlock extends Block {
   public Listing apply(Listing listing) {
     listing.add('{').newline().indent(1);
 
-    String source = "buffer"; // TODO generator.getSpawnByteBufferName();
-    Optional<MethodParameter> time = generator.getTimeParameter(method);
+    String source = builder.buffer.getName();
+    Optional<MethodParameter> time = builder.generator.getTimeParameter(method);
     time.ifPresent(arg -> listing.eval("long {{$}} = {{$}}.getLong(){{;}}", arg.getName(), source));
 
     for (MethodParameter parameter : method.getParameters()) {
-      if (generator.isParameterTime(parameter)) {
+      if (builder.generator.isParameterTime(parameter)) {
         continue;
       }
       listing.add(parameter.getType());
@@ -50,15 +49,15 @@ public class StashSpawnMethodBlock extends Block {
       listing.add(' ');
       listing.add('=');
       listing.add(' ');
-      Stashlet<?> stashlet = null; // TODO generator.resolve(parameter);
-      //listing.add(stashlet.spawn(source, parameter.getType()));
+      Stashlet<?> stashlet = builder.generator.resolve(parameter);
+      listing.add(stashlet.spawn(source, parameter.getType()));
       listing.add(';');
       listing.newline();
     }
-    if (generator.isMethodReturn(method)) {
+    if (builder.generator.isMethodReturn(method)) {
       listing.add("return ");
     }
-    generator.applyCall(listing, method);
+    builder.generator.applyCall(listing, method);
 
     listing.indent(-1).add('}').newline();
     return listing;

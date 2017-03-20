@@ -16,11 +16,19 @@ package de.sormuras.stash.compiler;
 import de.sormuras.beethoven.Annotation;
 import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.composer.ImportsComposer;
-import de.sormuras.beethoven.unit.*;
+import de.sormuras.beethoven.unit.ClassDeclaration;
+import de.sormuras.beethoven.unit.CompilationUnit;
+import de.sormuras.beethoven.unit.InterfaceDeclaration;
+import de.sormuras.beethoven.unit.MethodDeclaration;
+import de.sormuras.beethoven.unit.MethodParameter;
 import de.sormuras.stash.Stash;
 import de.sormuras.stash.compiler.generator.StashBuilder;
+import de.sormuras.stash.compiler.stashlet.Quaestor;
+import de.sormuras.stash.compiler.stashlet.Query;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.zip.CRC32;
 import javax.annotation.Generated;
 import javax.lang.model.element.Modifier;
@@ -31,8 +39,8 @@ public class Generator {
   private final Stash interfaceAnnotation;
 
   private final CRC32 crc32;
-  private final Set<String> hashSet;
   private final Instant now;
+  private final Quaestor quaestor;
 
   Generator(Stash interfaceAnnotation, InterfaceDeclaration interfaceDeclaration) {
     this.interfaceAnnotation = interfaceAnnotation;
@@ -40,7 +48,7 @@ public class Generator {
 
     this.now = Instant.now();
     this.crc32 = new CRC32();
-    this.hashSet = new HashSet<>();
+    this.quaestor = new Quaestor();
   }
 
   public InterfaceDeclaration getInterfaceDeclaration() {
@@ -73,7 +81,7 @@ public class Generator {
   }
 
   public String buildSpawnMethodName(MethodDeclaration method, String hash) {
-    return method.getName() + "_" + hash;
+    return method.getName() + hash;
   }
 
   List<CompilationUnit> generate() {
@@ -124,6 +132,17 @@ public class Generator {
     return interfaceAnnotation.verify();
   }
 
+  public Stashlet<?> resolve(MethodParameter parameter) {
+    boolean isStashable = false;
+    boolean isEnum = false;
+    if (parameter.isTagged()) {
+      isStashable = Boolean.TRUE.equals(parameter.getTags().get(Tag.PARAMETER_IS_STASHABLE));
+      isEnum = Boolean.TRUE.equals(parameter.getTags().get(Tag.PARAMETER_IS_ENUM));
+    }
+    Query query = new Query(parameter.getType(), isStashable, isEnum);
+    return quaestor.resolve(query);
+  }
+
   public Listing applyCall(Listing listing, MethodDeclaration method) {
     listing.add("this.");
     listing.add(buildOtherName());
@@ -131,34 +150,5 @@ public class Generator {
     method.applyCall(listing);
     listing.add(';');
     return listing.newline();
-  }
-
-  public Listing applyCallAndReturn(Listing listing, MethodDeclaration method, String hash) {
-    boolean returns = isMethodReturn(method);
-    if (isMethodVolatile(method)) {
-      if (returns) {
-        listing.add("return ");
-      }
-      return applyCall(listing, method);
-    }
-    String result = "$$result";
-    if (returns) {
-      listing.eval("{{L}} {{$}} = ", method.getReturnType(), result);
-    }
-    if (isVerify()) {
-      listing.eval("{{$}}(){{;}}", buildSpawnMethodName(method, hash));
-    } else {
-      applyCall(listing, method);
-    }
-    // TODO Call commit();
-    if (returns) {
-      listing.add("return ").add(result);
-      if (isMethodChainable(method)) {
-        listing.eval(" == {{$}} ? this : {{$}}", buildOtherName(), result);
-      }
-      listing.add(';');
-      listing.newline();
-    }
-    return listing;
   }
 }

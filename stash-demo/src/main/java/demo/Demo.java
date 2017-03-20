@@ -21,25 +21,26 @@ import java.util.Arrays;
 @Stash
 public interface Demo {
 
-  void store(int value);
+  int store(int value);
 
   static void main(String... args) {
+    int sum = 0;
     Impl impl = new Impl();
-    System.out.println(Arrays.toString(impl.values)); // [0, 0, 0, 0, 0]
+    System.out.println(Arrays.toString(impl.values) + " = " + sum); // [0, 0, 0, 0, 0] = 0
 
     ByteBuffer buffer = ByteBuffer.allocate(1000);
     Demo demo = new DemoStash(impl, buffer);
     demo.store(1);
     demo.store(2);
-    demo.store(3);
-    System.out.println(Arrays.toString(impl.values)); // [1, 2, 3, 0, 0]
+    sum = demo.store(3);
+    System.out.println(Arrays.toString(impl.values) + " = " + sum); // [1, 2, 3, 0, 0] = 6
 
     impl = new Impl();
     buffer.flip();
 
     Demo next = new DemoStash(impl, buffer);
-    next.store(4);
-    System.out.println(Arrays.toString(impl.values)); // [1, 2, 3, 4, 0]
+    sum = next.store(4);
+    System.out.println(Arrays.toString(impl.values) + " = " + sum); // [1, 2, 3, 4, 0] = 10
   }
 
   class Impl implements Demo {
@@ -48,9 +49,10 @@ public interface Demo {
     private final int[] values = new int[5];
 
     @Override
-    public void store(int value) {
+    public int store(int value) {
       values[index] = value;
       index = (index + 1) % values.length;
+      return Arrays.stream(values).sum();
     }
   }
 }
