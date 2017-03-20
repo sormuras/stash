@@ -18,7 +18,7 @@ import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.composer.ImportsComposer;
 import de.sormuras.beethoven.unit.*;
 import de.sormuras.stash.Stash;
-import de.sormuras.stash.compiler.generator.StashGenerator;
+import de.sormuras.stash.compiler.generator.StashBuilder;
 import java.time.Instant;
 import java.util.*;
 import java.util.zip.CRC32;
@@ -63,16 +63,16 @@ public class Generator {
     return interfaceDeclaration.getName().toLowerCase(); // .toCamelCase();
   }
 
-  protected String buildMethodHash(MethodDeclaration method) {
+  public String buildMethodHash(MethodDeclaration method) {
     crc32.reset();
     crc32.update(method.getName().getBytes());
     method.getParameters().forEach(p -> crc32.update(p.getType().list().getBytes()));
     String hash = Long.toHexString(crc32.getValue()).toUpperCase();
     hash = ("00000000" + hash).substring(hash.length());
-    return "0x" + hash + "L";
+    return "0x" + hash;
   }
 
-  private String buildSpawnMethodName(MethodDeclaration method, String hash) {
+  public String buildSpawnMethodName(MethodDeclaration method, String hash) {
     return method.getName() + "_" + hash;
   }
 
@@ -86,7 +86,7 @@ public class Generator {
 
   // create compilation unit "DemoStash.java" with "class DemoStash implements Demo {...}"
   private CompilationUnit generateStash(CompilationUnit unit) {
-    StashGenerator stashGenerator = new StashGenerator(this, unit);
+    StashBuilder stashGenerator = new StashBuilder(this, unit);
     ClassDeclaration stashClass = stashGenerator.generate();
     stashClass.addAnnotation(buildAnnotationGenerated());
     return unit;

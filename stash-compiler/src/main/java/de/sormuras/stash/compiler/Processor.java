@@ -24,12 +24,17 @@ import javax.tools.JavaFileObject;
 
 public class Processor extends AbstractProcessor {
 
+  private boolean verbose = Boolean.getBoolean("de.sormuras.stash.compiler.verbose");
+
   private void error(Element element, String format, Object... args) {
     Diagnostic.Kind kind = Diagnostic.Kind.ERROR;
     processingEnv.getMessager().printMessage(kind, format(format, args), element);
   }
 
   private void print(String format, Object... args) {
+    if (!verbose) {
+      return;
+    }
     Diagnostic.Kind kind = Diagnostic.Kind.NOTE;
     processingEnv.getMessager().printMessage(kind, format(format, args));
   }

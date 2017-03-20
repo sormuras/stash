@@ -24,16 +24,16 @@ import de.sormuras.stash.compiler.Generator;
 import java.nio.ByteBuffer;
 import javax.lang.model.element.Modifier;
 
-public class StashGenerator {
+public class StashBuilder {
 
-  private final Generator generator;
-  private final CompilationUnit compilationUnit;
+  final Generator generator;
+  final CompilationUnit compilationUnit;
 
-  private final NormalClassDeclaration stashClass;
-  private final FieldDeclaration buffer;
-  private final FieldDeclaration other;
+  final NormalClassDeclaration stashClass;
+  final FieldDeclaration buffer;
+  final FieldDeclaration other;
 
-  public StashGenerator(Generator generator, CompilationUnit compilationUnit) {
+  public StashBuilder(Generator generator, CompilationUnit compilationUnit) {
     this.generator = generator;
     this.compilationUnit = compilationUnit;
 
@@ -66,36 +66,13 @@ public class StashGenerator {
 
   public NormalClassDeclaration generate() {
     generateConstructor();
-    generateRespawn();
     generateToString();
-    generateImplementationMethods();
+    generateMethods();
     return stashClass;
   }
 
   private void generateConstructor() {
-    MethodDeclaration constructor = stashClass.declareConstructor();
-    constructor.setModifiers(Modifier.PUBLIC);
-    constructor.declareParameter(other.getType(), other.getName());
-    constructor.declareParameter(ByteBuffer.class, buffer.getName());
-    constructor.addStatement("this." + other.getName() + " = " + other.getName());
-    constructor.addStatement("this." + buffer.getName() + " = " + buffer.getName());
-    //constructor.addStatement("respawn();");
-  }
-
-  private void generateRespawn() {
-    //for (long index = 0; index < buffer.getLong(); index++) {
-    //    switch (buffer.getInt()) {
-    //        case 2345890: generateRespawn();
-    //        default: throw new AssertionError(index);
-    //    }
-    //}
-    //buffer.limit(buffer.capacity());
-
-    //MethodDeclaration respawn = stashClass.declareMethod(void.class, "respawn");
-    //respawn.setModifiers(Modifier.PUBLIC);
-    //respawn.addStatement(
-    //    "for (long index = 0; index < {{$}}.getLong(); index++) {", buffer.getName());
-    //respawn.addStatement("switch(" + buffer.getName() + ".getLong()) {");
+    stashClass.declareMethod(new StashConstructor(this));
   }
 
   private void generateToString() {
@@ -105,21 +82,33 @@ public class StashGenerator {
     toString.addStatement("return this." + other.getName() + ".toString()");
   }
 
-  private void generateImplementationMethods() {
+  private void generateMethods() {
     for (MethodDeclaration interfaceMethod : generator.getInterfaceDeclaration().getMethods()) {
-      MethodDeclaration stashMethod =
-          stashClass.declareMethod(UnitTool.override(interfaceMethod, true));
-      stashMethod.getModifiers().remove(Modifier.DEFAULT);
-
-      stashMethod.addStatement(
-          listing -> {
-            if (!stashMethod.getReturnType().isVoid()) {
-              listing.add("return ");
-            }
-            listing.add("this." + other.getName() + ".");
-            stashMethod.applyCall(listing);
-            return listing;
-          });
+      generateMethodImplementation(interfaceMethod);
+      generateMethodRespawn(interfaceMethod);
     }
+  }
+
+  private void generateMethodImplementation(MethodDeclaration interfaceMethod) {
+    MethodDeclaration method = stashClass.declareMethod(UnitTool.override(interfaceMethod, true));
+    method.getModifiers().remove(Modifier.DEFAULT);
+
+    method.addStatement(
+        listing -> {
+          if (!method.getReturnType().isVoid()) {
+            listing.add("return ");
+          }
+          listing.add("this." + other.getName() + ".");
+          method.applyCall(listing);
+          return listing;
+        });
+  }
+
+  private void generateMethodRespawn(MethodDeclaration interfaceMethod) {
+    String hash = generator.buildMethodHash(interfaceMethod);
+    String name = generator.buildSpawnMethodName(interfaceMethod, hash);
+    MethodDeclaration method = stashClass.declareMethod(void.class, name);
+    method.setModifiers(Modifier.PRIVATE);
+    method.addStatement("// TODO");
   }
 }
