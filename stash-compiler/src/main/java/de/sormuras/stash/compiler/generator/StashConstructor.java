@@ -14,11 +14,12 @@
 
 package de.sormuras.stash.compiler.generator;
 
+import static de.sormuras.stash.compiler.Tag.isMethodVolatile;
+
 import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.unit.Block;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import java.nio.ByteBuffer;
-import java.util.List;
 import javax.lang.model.element.Modifier;
 
 class StashConstructor extends MethodDeclaration {
@@ -57,23 +58,11 @@ class StashConstructor extends MethodDeclaration {
       assign(listing, buffer);
       assign(listing, counter, buffer + ".getLong()");
 
-      //for (long index = 0; index < buffer.getLong(); index++) {
-      //  int hash = buffer.getInt();
-      //  switch (hash) {
-      //    case 0x1345890F: store_0x1345890F();
-      //    ...
-      //    default: throw new AssertionError(index);
-      //  }
-      //}
-      //buffer.limit(buffer.capacity());
-
-      List<MethodDeclaration> methods = builder.generator.getInterfaceDeclaration().getMethods();
-
       listing.add("for (long index = 0; index < counter; index++) {").newline().indent(1);
       listing.add("int hash = ").add(buffer).add(".getInt();").newline();
       listing.add("switch (hash) {").newline().indent(1);
-      for (MethodDeclaration method : methods) {
-        if (builder.generator.isMethodVolatile(method)) {
+      for (MethodDeclaration method : builder.generator.getInterfaceDeclaration().getMethods()) {
+        if (isMethodVolatile(method)) {
           continue;
         }
         String hash = builder.generator.buildMethodHash(method);

@@ -14,6 +14,8 @@
 
 package de.sormuras.stash.compiler.generator;
 
+import static de.sormuras.stash.compiler.Tag.isMethodVolatile;
+
 import de.sormuras.beethoven.type.Type;
 import de.sormuras.beethoven.unit.CompilationUnit;
 import de.sormuras.beethoven.unit.FieldDeclaration;
@@ -49,6 +51,7 @@ public class StashBuilder {
     NormalClassDeclaration stashClass = compilationUnit.declareClass(interfaceName + "Stash");
     stashClass.setModifiers(Modifier.PUBLIC);
     stashClass.addInterface(generator.getInterfaceDeclaration().toType());
+    stashClass.setSuperClass(generator.buildSuperClass());
     return stashClass;
   }
 
@@ -98,7 +101,7 @@ public class StashBuilder {
         throw new AssertionError("Method hash collision: " + interfaceMethod);
       }
       generateMethodImplementation(interfaceMethod, hash);
-      if (generator.isMethodVolatile(interfaceMethod)) {
+      if (isMethodVolatile(interfaceMethod)) {
         continue;
       }
       generateMethodRespawn(interfaceMethod, hash);

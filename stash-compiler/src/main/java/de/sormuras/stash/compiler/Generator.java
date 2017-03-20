@@ -16,6 +16,8 @@ package de.sormuras.stash.compiler;
 import de.sormuras.beethoven.Annotation;
 import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.composer.ImportsComposer;
+import de.sormuras.beethoven.type.ClassType;
+import de.sormuras.beethoven.type.Type;
 import de.sormuras.beethoven.unit.ClassDeclaration;
 import de.sormuras.beethoven.unit.CompilationUnit;
 import de.sormuras.beethoven.unit.InterfaceDeclaration;
@@ -32,6 +34,7 @@ import java.util.Optional;
 import java.util.zip.CRC32;
 import javax.annotation.Generated;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.type.MirroredTypeException;
 
 public class Generator {
 
@@ -67,6 +70,14 @@ public class Generator {
     return generated;
   }
 
+  public ClassType buildSuperClass() {
+    try {
+      return ClassType.type(interfaceAnnotation.classExtends());
+    } catch (MirroredTypeException mte) {
+      return (ClassType) Type.type(mte.getTypeMirror());
+    }
+  }
+
   public String buildOtherName() {
     return interfaceDeclaration.getName().toLowerCase(); // .toCamelCase();
   }
@@ -94,8 +105,8 @@ public class Generator {
 
   // create compilation unit "DemoStash.java" with "class DemoStash implements Demo {...}"
   private CompilationUnit generateStash(CompilationUnit unit) {
-    StashBuilder stashGenerator = new StashBuilder(this, unit);
-    ClassDeclaration stashClass = stashGenerator.generate();
+    StashBuilder stashBuilder = new StashBuilder(this, unit);
+    ClassDeclaration stashClass = stashBuilder.generate();
     stashClass.addAnnotation(buildAnnotationGenerated());
     return unit;
   }
@@ -105,27 +116,12 @@ public class Generator {
     ClassDeclaration guardDeclaration = unit.declareClass(interfaceDeclaration.getName() + "Guard");
     guardDeclaration.setModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
     guardDeclaration.addInterface(interfaceDeclaration.toType());
+    guardDeclaration.addAnnotation(buildAnnotationGenerated());
     return unit;
   }
 
   public Optional<MethodParameter> getTimeParameter(MethodDeclaration method) {
-    return method.getParameters().stream().filter(this::isParameterTime).findFirst();
-  }
-
-  public boolean isMethodChainable(MethodDeclaration method) {
-    return Boolean.TRUE.equals(method.getTags().get(Tag.METHOD_IS_CHAINABLE));
-  }
-
-  public boolean isMethodVolatile(MethodDeclaration method) {
-    return Boolean.TRUE.equals(method.getTags().get(Tag.METHOD_IS_VOLATILE));
-  }
-
-  public boolean isMethodReturn(MethodDeclaration method) {
-    return !method.getReturnType().isVoid();
-  }
-
-  public boolean isParameterTime(MethodParameter parameter) {
-    return Boolean.TRUE.equals(parameter.getTags().get(Tag.PARAMETER_IS_TIME));
+    return method.getParameters().stream().filter(Tag::isParameterTime).findFirst();
   }
 
   public boolean isVerify() {

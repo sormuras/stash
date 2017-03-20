@@ -14,6 +14,9 @@
 
 package de.sormuras.stash.compiler.generator;
 
+import static de.sormuras.stash.compiler.Tag.isMethodReturn;
+import static de.sormuras.stash.compiler.Tag.isParameterTime;
+
 import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.unit.Block;
 import de.sormuras.beethoven.unit.MethodDeclaration;
@@ -40,7 +43,7 @@ public class StashSpawnMethodBlock extends Block {
     time.ifPresent(arg -> listing.eval("long {{$}} = {{$}}.getLong(){{;}}", arg.getName(), source));
 
     for (MethodParameter parameter : method.getParameters()) {
-      if (builder.generator.isParameterTime(parameter)) {
+      if (isParameterTime(parameter)) {
         continue;
       }
       listing.add(parameter.getType());
@@ -54,7 +57,7 @@ public class StashSpawnMethodBlock extends Block {
       listing.add(';');
       listing.newline();
     }
-    if (builder.generator.isMethodReturn(method)) {
+    if (isMethodReturn(method)) {
       listing.add("return ");
     }
     builder.generator.applyCall(listing, method);

@@ -14,6 +14,11 @@
 
 package de.sormuras.stash.compiler.generator;
 
+import static de.sormuras.stash.compiler.Tag.isMethodChainable;
+import static de.sormuras.stash.compiler.Tag.isMethodReturn;
+import static de.sormuras.stash.compiler.Tag.isMethodVolatile;
+import static de.sormuras.stash.compiler.Tag.isParameterTime;
+
 import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.unit.Block;
 import de.sormuras.beethoven.unit.MethodDeclaration;
@@ -37,7 +42,7 @@ public class StashImplementationMethodBlock extends Block {
     listing.add('{').newline().indent(1);
 
     String target = builder.buffer.getName();
-    boolean record = !builder.generator.isMethodVolatile(method);
+    boolean record = !isMethodVolatile(method);
     boolean verify = builder.generator.isVerify() && !method.getParameters().isEmpty();
     if (record) {
       listing.eval("{{$}}.putInt({{$}}){{;}}", target, hash);
@@ -45,7 +50,7 @@ public class StashImplementationMethodBlock extends Block {
         listing.eval("{{$}}.mark(){{;}}", target);
       }
       for (MethodParameter parameter : method.getParameters()) {
-        if (builder.generator.isParameterTime(parameter)) {
+        if (isParameterTime(parameter)) {
           continue;
         }
         Stashlet<?> stashlet = builder.generator.resolve(parameter);
@@ -59,8 +64,8 @@ public class StashImplementationMethodBlock extends Block {
     }
 
     // "applyCallAndReturn"
-    boolean returns = builder.generator.isMethodReturn(method);
-    if (builder.generator.isMethodVolatile(method)) {
+    boolean returns = isMethodReturn(method);
+    if (isMethodVolatile(method)) {
       if (returns) {
         listing.add("return ");
       }
@@ -81,7 +86,7 @@ public class StashImplementationMethodBlock extends Block {
 
     if (returns) {
       listing.add("return ").add(result);
-      if (builder.generator.isMethodChainable(method)) {
+      if (isMethodChainable(method)) {
         listing.eval(" == {{$}} ? this : {{$}}", builder.generator.buildOtherName(), result);
       }
       listing.add(';');
