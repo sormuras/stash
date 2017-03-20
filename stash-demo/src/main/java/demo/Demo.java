@@ -24,35 +24,42 @@ public interface Demo {
   int store(int value);
 
   static void main(String... args) {
-    int sum = 0;
     Impl impl = new Impl();
-    System.out.println(Arrays.toString(impl.values) + " = " + sum); // [0, 0, 0, 0, 0] = 0
+    System.out.println(impl); // [0, 0, 0, 0, 0] = 0
 
     ByteBuffer buffer = ByteBuffer.allocate(1000);
     Demo demo = new DemoStash(impl, buffer);
     demo.store(1);
     demo.store(2);
-    sum = demo.store(3);
-    System.out.println(Arrays.toString(impl.values) + " = " + sum); // [1, 2, 3, 0, 0] = 6
+    demo.store(3);
+    System.out.println(impl); // [1, 2, 3, 0, 0] = 6
 
-    impl = new Impl();
     buffer.flip();
 
-    Demo next = new DemoStash(impl, buffer);
-    sum = next.store(4);
-    System.out.println(Arrays.toString(impl.values) + " = " + sum); // [1, 2, 3, 4, 0] = 10
+    Demo next = new DemoStash(new Impl(), buffer);
+    next.store(4);
+    System.out.println(next); // [1, 2, 3, 4, 0] = 10
   }
 
   class Impl implements Demo {
 
     private int index = 0;
-    private final int[] values = new int[5];
+    final int[] values = new int[5];
 
     @Override
     public int store(int value) {
       values[index] = value;
       index = (index + 1) % values.length;
+      return sum();
+    }
+
+    private int sum() {
       return Arrays.stream(values).sum();
+    }
+
+    @Override
+    public String toString() {
+      return Arrays.toString(values) + " = " + sum();
     }
   }
 }
