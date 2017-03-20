@@ -49,6 +49,19 @@ public class StashImplementationMethodBlock extends Block {
       if (verify) {
         listing.eval("{{$}}.mark(){{;}}", target);
       }
+      builder
+          .generator
+          .findTimeParameter(method)
+          .ifPresent(
+              (arg) -> {
+                listing.add(target);
+                listing.add(".putLong(");
+                listing.add(arg.getName());
+                listing.add(" = ");
+                listing.add(builder.clock);
+                listing.add(".millis());");
+                listing.newline();
+              });
       for (MethodParameter parameter : method.getParameters()) {
         if (isParameterTime(parameter)) {
           continue;

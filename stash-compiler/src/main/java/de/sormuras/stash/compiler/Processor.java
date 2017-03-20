@@ -1,5 +1,12 @@
 package de.sormuras.stash.compiler;
 
+import static de.sormuras.stash.compiler.Tag.setMethodIsBase;
+import static de.sormuras.stash.compiler.Tag.setMethodIsChainable;
+import static de.sormuras.stash.compiler.Tag.setMethodIsDirect;
+import static de.sormuras.stash.compiler.Tag.setMethodIsVolatile;
+import static de.sormuras.stash.compiler.Tag.setParameterIsEnum;
+import static de.sormuras.stash.compiler.Tag.setParameterIsStashable;
+import static de.sormuras.stash.compiler.Tag.setParameterIsTime;
 import static java.lang.String.format;
 
 import de.sormuras.beethoven.Annotation;
@@ -7,6 +14,9 @@ import de.sormuras.beethoven.type.ClassType;
 import de.sormuras.beethoven.type.Type;
 import de.sormuras.beethoven.unit.*;
 import de.sormuras.stash.Stash;
+import de.sormuras.stash.Stashable;
+import de.sormuras.stash.Time;
+import de.sormuras.stash.Volatile;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.List;
@@ -14,7 +24,12 @@ import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.*;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
@@ -47,10 +62,12 @@ public class Processor extends AbstractProcessor {
     return processingEnv.getElementUtils().getTypeElement(type.getCanonicalName());
   }
 
-  private boolean isSameType(
-      AnnotationMirror mirror, Class<? extends java.lang.annotation.Annotation> annotationClass) {
-    TypeMirror overrideMirror = element(annotationClass).asType();
-    return processingEnv.getTypeUtils().isSameType(mirror.getAnnotationType(), overrideMirror);
+  private boolean isAssignable(TypeMirror t1, Class<?> t2) {
+    return isAssignable(t1, element(t2).asType());
+  }
+
+  private boolean isAssignable(TypeMirror t1, TypeMirror t2) {
+    return processingEnv.getTypeUtils().isAssignable(t1, t2);
   }
 
   @Override
@@ -151,58 +168,34 @@ public class Processor extends AbstractProcessor {
     MethodDeclaration declaration = new MethodDeclaration();
     declaration.setName(method.getSimpleName().toString());
     declaration.addModifiers(method.getModifiers());
-    method
-        .getAnnotationMirrors()
-        .stream()
-        .filter(a -> !isSameType(a, Override.class))
-        .forEach(a -> declaration.addAnnotation(Type.Mirrors.annotation(a)));
+    declaration.addAnnotations(Type.Mirrors.annotations(method));
     // TODO method.getTypeParameters().forEach(e -> builder.addTypeVariable(TypeVariableName.get((TypeVariable) e.asType())));
     method.getThrownTypes().forEach(t -> declaration.addThrows((ClassType) ClassType.type(t)));
     declaration.setReturnType(Type.type(method.getReturnType()));
     // parameters
     List<? extends VariableElement> parameters = method.getParameters();
-    List<? extends TypeMirror> paramtypes = executableType.getParameterTypes();
+    List<? extends TypeMirror> parameterTypes = executableType.getParameterTypes();
     for (int index = 0; index < parameters.size(); index++) {
-      TypeMirror type = paramtypes.get(index);
+      TypeMirror type = parameterTypes.get(index);
       Element element = processingEnv.getTypeUtils().asElement(type);
       VariableElement parameter = parameters.get(index);
       String name = parameter.getSimpleName().toString();
       MethodParameter methodParameter = declaration.declareParameter(Type.type(type), name);
       methodParameter.setFinal(parameter.getModifiers().contains(Modifier.FINAL));
-      parameter
-          .getAnnotationMirrors()
-          .forEach(a -> methodParameter.addAnnotation(Type.Mirrors.annotation(a)));
+      methodParameter.addAnnotations(Type.Mirrors.annotations(parameter));
       setParameterIsEnum(methodParameter, element != null && element.getKind() == ElementKind.ENUM);
-      // TODO setParameterIsStashable(methodParameter, processingEnv.getTypeUtils().isAssignable(type, element(Stashable.class).asType()));
-      // TODO setParameterIsTime(methodParameter, parameter.getAnnotation(Stash.Time.class) != null);
+      setParameterIsStashable(methodParameter, isAssignable(type, Stashable.class));
+      setParameterIsTime(methodParameter, parameter.getAnnotation(Time.class) != null);
     }
     // calculate flags and other properties
     setMethodIsBase(
         declaration,
         method.getEnclosingElement().equals(element(AutoCloseable.class))
             || method.getEnclosingElement().equals(element(Stash.class)));
-    setMethodIsChainable(
-        declaration,
-        processingEnv.getTypeUtils().isAssignable(stashed.asType(), method.getReturnType()));
-    // TODO Stash.Volatile volanno = method.getAnnotation(Stash.Volatile.class);
-    // TODO info.isVolatile = volanno != null;
-    // TODO info.isDirect = volanno != null && volanno.direct();
+    setMethodIsChainable(declaration, isAssignable(stashed.asType(), method.getReturnType()));
+    Volatile volatileAnnotation = method.getAnnotation(Volatile.class);
+    setMethodIsVolatile(declaration, volatileAnnotation != null);
+    setMethodIsDirect(declaration, volatileAnnotation != null && volatileAnnotation.direct());
     return declaration;
-  }
-
-  static void setMethodIsBase(MethodDeclaration method, boolean isBase) {
-    method.getTags().put(Tag.METHOD_IS_BASE, isBase);
-  }
-
-  static void setMethodIsChainable(MethodDeclaration method, boolean isChainable) {
-    method.getTags().put(Tag.METHOD_IS_CHAINABLE, isChainable);
-  }
-
-  static void setParameterIsEnum(MethodParameter parameter, boolean isEnum) {
-    parameter.getTags().put(Tag.PARAMETER_IS_ENUM, isEnum);
-  }
-
-  static boolean isParameterEnum(MethodParameter parameter) {
-    return (boolean) parameter.getTag(Tag.PARAMETER_IS_ENUM).orElseThrow(Error::new);
   }
 }

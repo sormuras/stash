@@ -22,7 +22,6 @@ import de.sormuras.beethoven.unit.Block;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.MethodParameter;
 import de.sormuras.stash.compiler.Stashlet;
-import java.util.Optional;
 
 public class StashSpawnMethodBlock extends Block {
 
@@ -39,8 +38,10 @@ public class StashSpawnMethodBlock extends Block {
     listing.add('{').newline().indent(1);
 
     String source = builder.buffer.getName();
-    Optional<MethodParameter> time = builder.generator.getTimeParameter(method);
-    time.ifPresent(arg -> listing.eval("long {{$}} = {{$}}.getLong(){{;}}", arg.getName(), source));
+    builder
+        .generator
+        .findTimeParameter(method)
+        .ifPresent(arg -> listing.eval("long {{$}} = {{$}}.getLong(){{;}}", arg.getName(), source));
 
     for (MethodParameter parameter : method.getParameters()) {
       if (isParameterTime(parameter)) {

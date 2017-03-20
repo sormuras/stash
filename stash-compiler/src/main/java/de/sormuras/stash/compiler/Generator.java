@@ -95,6 +95,10 @@ public class Generator {
     return method.getName() + hash;
   }
 
+  public Optional<MethodParameter> findTimeParameter(MethodDeclaration method) {
+    return method.getParameters().stream().filter(Tag::isParameterTime).findFirst();
+  }
+
   List<CompilationUnit> generate() {
     String packageName = interfaceDeclaration.getCompilationUnit().getPackageName();
     CompilationUnit stashUnit = generateStash(CompilationUnit.of(packageName));
@@ -120,21 +124,13 @@ public class Generator {
     return unit;
   }
 
-  public Optional<MethodParameter> getTimeParameter(MethodDeclaration method) {
-    return method.getParameters().stream().filter(Tag::isParameterTime).findFirst();
-  }
-
   public boolean isVerify() {
     return interfaceAnnotation.verify();
   }
 
   public Stashlet<?> resolve(MethodParameter parameter) {
-    boolean isStashable = false;
-    boolean isEnum = false;
-    if (parameter.isTagged()) {
-      isStashable = Boolean.TRUE.equals(parameter.getTags().get(Tag.PARAMETER_IS_STASHABLE));
-      isEnum = Boolean.TRUE.equals(parameter.getTags().get(Tag.PARAMETER_IS_ENUM));
-    }
+    boolean isStashable = Tag.isParameterStashable(parameter);
+    boolean isEnum = Tag.isParameterEnum(parameter);
     Query query = new Query(parameter.getType(), isStashable, isEnum);
     return quaestor.resolve(query);
   }

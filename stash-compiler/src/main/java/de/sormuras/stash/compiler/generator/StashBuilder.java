@@ -24,6 +24,7 @@ import de.sormuras.beethoven.unit.NormalClassDeclaration;
 import de.sormuras.beethoven.unit.UnitTool;
 import de.sormuras.stash.compiler.Generator;
 import java.nio.ByteBuffer;
+import java.time.Clock;
 import java.util.HashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
@@ -35,6 +36,7 @@ public class StashBuilder {
   final NormalClassDeclaration stashClass;
   final FieldDeclaration buffer;
   final FieldDeclaration counter;
+  final FieldDeclaration clock;
   final FieldDeclaration other;
 
   public StashBuilder(Generator generator, CompilationUnit compilationUnit) {
@@ -43,6 +45,7 @@ public class StashBuilder {
     this.stashClass = createStashClass(compilationUnit);
     this.counter = createStashFieldCounter();
     this.buffer = createStashFieldBuffer();
+    this.clock = createStashFieldClock();
     this.other = createStashFieldOther();
   }
 
@@ -64,6 +67,12 @@ public class StashBuilder {
   private FieldDeclaration createStashFieldCounter() {
     FieldDeclaration buffer = stashClass.declareField(long.class, "counter");
     buffer.setModifiers(Modifier.PRIVATE);
+    return buffer;
+  }
+
+  private FieldDeclaration createStashFieldClock() {
+    FieldDeclaration buffer = stashClass.declareField(Clock.class, "clock");
+    buffer.setModifiers(Modifier.PRIVATE, Modifier.FINAL);
     return buffer;
   }
 
