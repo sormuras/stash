@@ -41,7 +41,7 @@ public class StashImplementationMethodBlock extends Block {
   public Listing apply(Listing listing) {
     listing.add('{').newline().indent(1);
 
-    String target = builder.buffer.getName();
+    String target = "this." + builder.buffer.getName();
     boolean record = !isMethodVolatile(method);
     boolean verify = builder.generator.isVerify() && !method.getParameters().isEmpty();
     if (record) {
@@ -95,7 +95,7 @@ public class StashImplementationMethodBlock extends Block {
     }
 
     // "commit"
-    listing.eval("{{$}}.putLong(0, ++{{$}}){{;}}", target, builder.counter.getName());
+    listing.eval("{{$}}.putLong(0, ++this.{{$}}){{;}}", target, builder.counter.getName());
 
     if (returns) {
       listing.add("return ").add(result);

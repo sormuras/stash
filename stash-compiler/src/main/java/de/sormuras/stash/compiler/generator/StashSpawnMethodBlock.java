@@ -37,7 +37,7 @@ public class StashSpawnMethodBlock extends Block {
   public Listing apply(Listing listing) {
     listing.add('{').newline().indent(1);
 
-    String source = builder.buffer.getName();
+    String source = "this." + builder.buffer.getName();
     builder
         .generator
         .findTimeParameter(method)
