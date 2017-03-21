@@ -1,3 +1,17 @@
+/*
+ * Copyright (C) 2017 Christian Stein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package de.sormuras.stash.compiler;
 
 import static de.sormuras.stash.compiler.Tag.setMethodIsBase;
@@ -12,12 +26,20 @@ import static java.lang.String.format;
 import de.sormuras.beethoven.Annotation;
 import de.sormuras.beethoven.type.ClassType;
 import de.sormuras.beethoven.type.Type;
-import de.sormuras.beethoven.unit.*;
+import de.sormuras.beethoven.unit.CompilationUnit;
+import de.sormuras.beethoven.unit.InterfaceDeclaration;
+import de.sormuras.beethoven.unit.MethodDeclaration;
+import de.sormuras.beethoven.unit.MethodParameter;
+import de.sormuras.beethoven.unit.TypeDeclaration;
 import de.sormuras.stash.Stash;
 import de.sormuras.stash.Stashable;
 import de.sormuras.stash.Time;
 import de.sormuras.stash.Volatile;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +61,7 @@ import javax.tools.JavaFileObject;
 
 public class Processor extends AbstractProcessor {
 
+  private int roundCounter = 0;
   private boolean verbose = Boolean.getBoolean("de.sormuras.stash.compiler.verbose");
 
   private void error(Element element, String format, Object... args) {
@@ -46,7 +69,7 @@ public class Processor extends AbstractProcessor {
     processingEnv.getMessager().printMessage(kind, format(format, args), element);
   }
 
-  private void print(String format, Object... args) {
+  private void note(String format, Object... args) {
     if (!verbose) {
       return;
     }
@@ -84,11 +107,43 @@ public class Processor extends AbstractProcessor {
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment round) {
+    note("Round #%d -> %s", roundCounter, round);
     if (round.processingOver()) {
       return true;
     }
+    if (roundCounter == 0) {
+      copyStashable();
+    }
     processAllStashAnnotatedElements(round.getElementsAnnotatedWith(Stash.class));
+    roundCounter++;
     return true;
+  }
+
+  private void copyStashable() {
+    try {
+      String sourceName = Stashable.class.getCanonicalName();
+      String sourceText = loadJavaSource(sourceName.replace('.', '/') + ".java");
+      JavaFileObject file = processingEnv.getFiler().createSourceFile(sourceName);
+      try (PrintStream stream = new PrintStream(file.openOutputStream(), false, "UTF-8")) {
+        stream.print(sourceText);
+      }
+    } catch (Exception exception) {
+      error(null, "Stashable.java creation failed: %s", exception.toString());
+    }
+  }
+
+  private String loadJavaSource(String name) throws Exception {
+    InputStream inputStream = getClass().getClassLoader().getResourceAsStream(name);
+    if (inputStream == null) {
+      inputStream = Files.newInputStream(Paths.get("../stash-api/src/main/java", name));
+    }
+    ByteArrayOutputStream result = new ByteArrayOutputStream();
+    byte[] buffer = new byte[1024];
+    int length;
+    while ((length = inputStream.read(buffer)) != -1) {
+      result.write(buffer, 0, length);
+    }
+    return result.toString("UTF-8");
   }
 
   private void processAllStashAnnotatedElements(Set<? extends Element> stashAnnotatedElements) {
@@ -107,7 +162,7 @@ public class Processor extends AbstractProcessor {
 
   private void processStashAnnotatedElement(TypeElement stashAnnotated) {
     Stash stash = stashAnnotated.getAnnotation(Stash.class);
-    print("Interface %s is annotated with %s", stashAnnotated, stash);
+    note("Interface %s is annotated with %s", stashAnnotated, stash);
 
     String packageName = packageOf(stashAnnotated);
     String simpleName = stashAnnotated.getSimpleName().toString();
@@ -115,13 +170,13 @@ public class Processor extends AbstractProcessor {
     InterfaceDeclaration interfaceDeclaration = unit.declareInterface(simpleName);
     interfaceDeclaration.addAnnotation(Annotation.annotation(stash));
     processStashedInterface(stashAnnotated, interfaceDeclaration);
-    print("Interface %s was declared as:%s", stashAnnotated, unit.list(" "));
+    note("Interface %s was declared as:%s", stashAnnotated, unit.list(" "));
 
     // generate...
     Generator generator = new Generator(stash, interfaceDeclaration);
     List<CompilationUnit> generatedUnits = generator.generate();
     for (CompilationUnit generated : generatedUnits) {
-      print("Generated %s", generated.toURI());
+      note("Generated %s", generated.toURI());
       TypeDeclaration principal =
           generated.getEponymousDeclaration().orElseThrow(IllegalStateException::new);
       try {
@@ -143,28 +198,23 @@ public class Processor extends AbstractProcessor {
         ElementFilter.methodsIn(processingEnv.getElementUtils().getAllMembers(stashed));
     methods.removeIf(m -> /* m.isDefault() || */ m.getModifiers().contains(Modifier.STATIC));
     methods.removeIf(m -> m.getEnclosingElement().equals(element(Object.class)));
-    // methods.removeIf(m -> m.getEnclosingElement().equals(element(AutoCloseable.class)));
-    // methods.removeIf(m -> m.getEnclosingElement().equals(element(Stash.class)));
 
-    //		List<MethodDeclaration> methodInfos = new ArrayList<>(methods.size());
     for (ExecutableElement method : methods) {
-      DeclaredType decodecl = (DeclaredType) stashed.asType();
+      DeclaredType declaredType = (DeclaredType) stashed.asType();
       ExecutableType et;
       try {
         // See https://bugs.eclipse.org/bugs/show_bug.cgi?id=481555
-        et = (ExecutableType) processingEnv.getTypeUtils().asMemberOf(decodecl, method);
+        et = (ExecutableType) processingEnv.getTypeUtils().asMemberOf(declaredType, method);
       } catch (IllegalArgumentException e) {
-        // warn(method, e.toString());
         et = (ExecutableType) method.asType();
       }
-      print("  %s -> %s", et, method);
       declaration.declareMethod(processStashedMethod(stashed, method, et));
     }
   }
 
   private MethodDeclaration processStashedMethod(
       TypeElement stashed, ExecutableElement method, ExecutableType executableType) {
-    //
+    // method signature
     MethodDeclaration declaration = new MethodDeclaration();
     declaration.setName(method.getSimpleName().toString());
     declaration.addModifiers(method.getModifiers());
@@ -188,12 +238,10 @@ public class Processor extends AbstractProcessor {
       setParameterIsTime(methodParameter, parameter.getAnnotation(Time.class) != null);
     }
     // calculate flags and other properties
-    setMethodIsBase(
-        declaration,
-        method.getEnclosingElement().equals(element(AutoCloseable.class))
-            || method.getEnclosingElement().equals(element(Stash.class)));
-    setMethodIsChainable(declaration, isAssignable(stashed.asType(), method.getReturnType()));
+    Element enclosingElement = method.getEnclosingElement();
     Volatile volatileAnnotation = method.getAnnotation(Volatile.class);
+    setMethodIsBase(declaration, enclosingElement.equals(element(AutoCloseable.class)));
+    setMethodIsChainable(declaration, isAssignable(stashed.asType(), method.getReturnType()));
     setMethodIsVolatile(declaration, volatileAnnotation != null);
     setMethodIsDirect(declaration, volatileAnnotation != null && volatileAnnotation.direct());
     return declaration;

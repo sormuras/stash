@@ -21,4 +21,11 @@ subprojects { project ->
         testCompile ("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
     }
 
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = project.sourceCompatibility
+        targetCompatibility = project.targetCompatibility
+        options.encoding = 'UTF-8'
+        options.compilerArgs << "-Xlint:deprecation" << "-Xlint:unchecked"
+    }
+
 }
