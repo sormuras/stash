@@ -20,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.Style;
 import de.sormuras.beethoven.type.Type;
+import de.sormuras.stash.Data;
 import de.sormuras.stash.N;
+import de.sormuras.stash.Zero;
 import de.sormuras.stash.compiler.Stashlet;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -91,8 +93,8 @@ class QuaestorTests {
     assertEquals(StaticStashlet.class, stashletClass(int.class, N.class));
     assertEquals(StaticStashlet.class, stashletClass(long.class, N.class));
     // generic and fallback
-    //assertEquals(StashableStashlet.class, stashletClass(Data.class));
-    //assertEquals(StashableStashlet.class, stashletClass(Dataless.class));
+    assertEquals(StashableStashlet.class, stashletClass(Data.class));
+    assertEquals(StashableStashlet.class, stashletClass(Zero.class));
     assertEquals(EnumStashlet.class, stashletClass(Thread.State.class));
     assertEquals(EnumStashlet.class, stashletClass(ProcessBuilder.Redirect.Type.class));
     assertEquals(EnumStashlet.class, stashletClass(Character.UnicodeScript.class));

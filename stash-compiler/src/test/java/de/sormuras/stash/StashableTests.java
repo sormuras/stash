@@ -91,48 +91,6 @@ class StashableTests {
     assertEquals(expected.hashCode(), actual.hashCode(), "hashCode() mismatch");
   }
 
-  static class Data implements Stashable {
-
-    private final long value;
-
-    Data() {
-      this.value = Math.round(Math.random());
-    }
-
-    Data(ByteBuffer source) {
-      this.value = source.getLong();
-    }
-
-    @Override
-    public int hashCode() {
-      return (int) value;
-    }
-
-    @Override
-    public ByteBuffer stash(ByteBuffer target) {
-      return target.putLong(value);
-    }
-  }
-
-  static class Zero implements Stashable {
-
-    Zero() {}
-
-    Zero(ByteBuffer source) {
-      assert source != null;
-    }
-
-    @Override
-    public int hashCode() {
-      return 0;
-    }
-
-    @Override
-    public ByteBuffer stash(ByteBuffer target) {
-      return target;
-    }
-  }
-
   static class MissingConstructor implements Stashable {
 
     @Override
