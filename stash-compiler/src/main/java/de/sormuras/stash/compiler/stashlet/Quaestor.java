@@ -15,7 +15,9 @@
 package de.sormuras.stash.compiler.stashlet;
 
 import de.sormuras.beethoven.type.Type;
+import de.sormuras.stash.Stashable;
 import de.sormuras.stash.compiler.Stashlet;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,9 +45,10 @@ public class Quaestor implements Iterable<Stashlet> {
     map.put(Type.type(Integer.class), map.get(Type.type(int.class)));
     map.put(Type.type(Long.class), map.get(Type.type(long.class)));
     map.put(Type.type(Short.class), map.get(Type.type(short.class)));
-    // Scan Buffer.class
-    // map.putAll(StaticStashlet.reflect(Buffer.class));
-    // map.put(Type.type(Boolean.class), map.get(Type.type(boolean.class)));
+    // find static stash/spawn pairs
+    map.putAll(StaticStashlet.reflect(Stashable.Buffer.class));
+    map.putAll(StaticStashlet.reflect(Stashable.Buffer.View.class));
+    map.put(Type.type(Boolean.class), map.get(Type.type(boolean.class)));
     return map;
   }
 
@@ -60,17 +63,22 @@ public class Quaestor implements Iterable<Stashlet> {
   private final Map<Type, Stashlet<?>> basics;
   private final Map<Type, Stashlet<?>> customs;
   private final Map<Type, Stashlet<?>> services;
-  //private final Stashlet stashAny;
-  //private final Stashlet stashEnum;
+  private final Stashlet stashAny;
+  private final Stashlet stashEnum;
   private final Stashlet stashStashable;
 
   public Quaestor() {
     this.customs = new LinkedHashMap<>();
     this.basics = mapBasics();
     this.services = mapServices();
-    //this.stashAny = new AnyStashlet();
-    //this.stashEnum = new EnumStashlet();
+    this.stashAny = new AnyStashlet();
+    this.stashEnum = new EnumStashlet();
     this.stashStashable = new StashableStashlet();
+  }
+
+  @SafeVarargs
+  public final Stashlet resolve(Class<?> classType, Class<? extends Annotation>... annotations) {
+    return resolve(Query.key(classType, annotations));
   }
 
   public Stashlet resolve(Query query) {
@@ -79,9 +87,8 @@ public class Quaestor implements Iterable<Stashlet> {
     if (services.containsKey(type)) return services.get(type);
     if (basics.containsKey(type)) return basics.get(type);
     if (query.isStashable()) return stashStashable;
-    //if (query.isEnum()) return stashEnum;
-    //return stashAny;
-    throw new AssertionError("Could not resolve type: " + type);
+    if (query.isEnum()) return stashEnum;
+    return stashAny;
   }
 
   public Map<Type, Stashlet<?>> customs() {
@@ -91,12 +98,12 @@ public class Quaestor implements Iterable<Stashlet> {
   @Override
   public Iterator<Stashlet> iterator() {
     ArrayList<Stashlet> all = new ArrayList<>();
-    all.addAll(customs.values());
+    all.addAll(customs().values());
     all.addAll(services.values());
     all.addAll(new HashSet<>(basics.values()));
     all.add(stashStashable);
-    //all.add(stashEnum);
-    //all.add(stashAny);
+    all.add(stashEnum);
+    all.add(stashAny);
     return all.listIterator();
   }
 }

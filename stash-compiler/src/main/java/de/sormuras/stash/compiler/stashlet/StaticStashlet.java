@@ -29,6 +29,16 @@ import java.util.Objects;
  */
 class StaticStashlet<T> extends AbstractStashlet<T> {
 
+  @SuppressWarnings("unchecked")
+  static <T> Stashlet<T> reflect(Class<?> container, Class<T> typeClass) {
+    return (Stashlet<T>) reflect(container, Type.type(typeClass));
+  }
+
+  @SuppressWarnings("unchecked")
+  static <T> Stashlet<T> reflect(Class<?> container, Type type) {
+    return (Stashlet<T>) reflect(container).get(type);
+  }
+
   static Map<Type, Stashlet<?>> reflect(Class<?> container) {
     Map<Type, Stashlet<?>> map = new HashMap<>();
     for (Method stashMethod : container.getDeclaredMethods()) {
