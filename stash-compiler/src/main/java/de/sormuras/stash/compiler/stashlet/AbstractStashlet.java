@@ -24,17 +24,31 @@ import java.util.Objects;
 abstract class AbstractStashlet<T> implements Stashlet<T> {
 
   private final Type type;
-  final Name stashName;
-  final Name spawnName;
+  private final Name stashName;
+  private final Name spawnName;
   private final StashFunction<T> stashFunction;
   private final SpawnFunction<T> spawnFunction;
 
   AbstractStashlet(Type type, Method stashMethod, Method spawnMethod) {
+    this(
+        type,
+        Name.name(stashMethod),
+        Name.name(spawnMethod),
+        StashFunction.of(stashMethod),
+        SpawnFunction.of(spawnMethod));
+  }
+
+  AbstractStashlet(
+      Type type,
+      Name stashName,
+      Name spawnName,
+      StashFunction<T> stashFunction,
+      SpawnFunction<T> spawnFunction) {
     this.type = type;
-    this.stashName = Name.name(stashMethod);
-    this.spawnName = Name.name(spawnMethod);
-    this.stashFunction = StashFunction.of(stashMethod);
-    this.spawnFunction = SpawnFunction.of(spawnMethod);
+    this.stashName = stashName;
+    this.spawnName = spawnName;
+    this.stashFunction = stashFunction;
+    this.spawnFunction = spawnFunction;
   }
 
   @Override
@@ -50,6 +64,14 @@ abstract class AbstractStashlet<T> implements Stashlet<T> {
   @Override
   public int hashCode() {
     return Objects.hash(type, stashName, spawnName);
+  }
+
+  public Name getSpawnName() {
+    return spawnName;
+  }
+
+  public Name getStashName() {
+    return stashName;
   }
 
   @Override

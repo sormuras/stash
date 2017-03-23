@@ -27,7 +27,7 @@ import java.util.Objects;
  *
  * @param <T> type to handle
  */
-class StaticStashlet<T> extends AbstractStashlet<T> {
+public class StaticStashlet<T> extends AbstractStashlet<T> {
 
   @SuppressWarnings("unchecked")
   static <T> Stashlet<T> reflect(Class<?> container, Class<T> typeClass) {
@@ -81,11 +81,11 @@ class StaticStashlet<T> extends AbstractStashlet<T> {
 
   @Override
   public Listable stash(String target, String name) {
-    return listing -> listing.add(stashName).add("(" + target + ", " + name + ")");
+    return listing -> listing.add(getStashName()).add("(" + target + ", " + name + ")");
   }
 
   @Override
   public Listable spawn(String source, Type type) {
-    return listing -> listing.add(spawnName).add("(" + source + ")");
+    return listing -> listing.add(getSpawnName()).add("(" + source + ")");
   }
 }

@@ -15,7 +15,6 @@ package de.sormuras.stash.compiler;
 
 import de.sormuras.beethoven.Annotation;
 import de.sormuras.beethoven.Listing;
-import de.sormuras.beethoven.composer.ImportsComposer;
 import de.sormuras.beethoven.type.ClassType;
 import de.sormuras.beethoven.type.Type;
 import de.sormuras.beethoven.unit.ClassDeclaration;
@@ -46,12 +45,17 @@ public class Generator {
   private final Quaestor quaestor;
 
   Generator(Stash interfaceAnnotation, InterfaceDeclaration interfaceDeclaration) {
+    this(interfaceAnnotation, interfaceDeclaration, new Quaestor());
+  }
+
+  Generator(
+      Stash interfaceAnnotation, InterfaceDeclaration interfaceDeclaration, Quaestor quaestor) {
     this.interfaceAnnotation = interfaceAnnotation;
     this.interfaceDeclaration = interfaceDeclaration;
 
     this.now = Instant.now();
     this.crc32 = new CRC32();
-    this.quaestor = new Quaestor();
+    this.quaestor = quaestor;
   }
 
   public InterfaceDeclaration getInterfaceDeclaration() {
@@ -102,7 +106,7 @@ public class Generator {
   List<CompilationUnit> generate() {
     String packageName = interfaceDeclaration.getCompilationUnit().getPackageName();
     CompilationUnit stashUnit = generateStash(CompilationUnit.of(packageName));
-    new ImportsComposer().apply(stashUnit);
+    // new ImportsComposer().apply(stashUnit);
     CompilationUnit guardUnit = generateGuard(CompilationUnit.of(packageName));
     return Arrays.asList(stashUnit, guardUnit);
   }

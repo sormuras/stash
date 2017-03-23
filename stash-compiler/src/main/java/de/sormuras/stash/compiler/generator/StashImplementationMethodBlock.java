@@ -30,18 +30,19 @@ public class StashImplementationMethodBlock extends Block {
   private final StashBuilder builder;
   private final MethodDeclaration method;
   private final String hash;
+  private final String target;
 
   StashImplementationMethodBlock(StashBuilder builder, MethodDeclaration method, String hash) {
     this.builder = builder;
     this.method = method;
     this.hash = hash;
+    this.target = "this." + builder.buffer.getName();
   }
 
   @Override
   public Listing apply(Listing listing) {
     listing.add('{').newline().indent(1);
 
-    String target = "this." + builder.buffer.getName();
     boolean record = !isMethodVolatile(method);
     boolean verify = builder.generator.isVerify() && !method.getParameters().isEmpty();
     if (record) {
@@ -76,13 +77,20 @@ public class StashImplementationMethodBlock extends Block {
       }
     }
 
-    // "applyCallAndReturn"
+    applyCallAndReturn(listing);
+
+    listing.indent(-1).add('}').newline();
+    return listing;
+  }
+
+  private void applyCallAndReturn(Listing listing) {
     boolean returns = isMethodReturn(method);
     if (isMethodVolatile(method)) {
       if (returns) {
         listing.add("return ");
       }
-      return builder.generator.applyCall(listing, method);
+      builder.generator.applyCall(listing, method);
+      return;
     }
     String result = "$$result";
     if (returns) {
@@ -105,9 +113,5 @@ public class StashImplementationMethodBlock extends Block {
       listing.add(';');
       listing.newline();
     }
-    //
-
-    listing.indent(-1).add('}').newline();
-    return listing;
   }
 }

@@ -46,11 +46,11 @@ class PrimitiveStashlet<T> extends AbstractStashlet<T> {
 
   @Override
   public Listable spawn(String source, Type type) {
-    return listing -> listing.add(source + "." + spawnName.lastName() + "()");
+    return listing -> listing.add(source + "." + getSpawnName().lastName() + "()");
   }
 
   @Override
   public Listable stash(String target, String name) {
-    return listing -> listing.add(target + "." + stashName.lastName() + "(" + name + ")");
+    return listing -> listing.add(target + "." + getStashName().lastName() + "(" + name + ")");
   }
 }

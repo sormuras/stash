@@ -31,18 +31,15 @@ import de.sormuras.beethoven.unit.InterfaceDeclaration;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.MethodParameter;
 import de.sormuras.beethoven.unit.TypeDeclaration;
-import de.sormuras.stash.Stash;
-import de.sormuras.stash.Stashable;
-import de.sormuras.stash.Time;
-import de.sormuras.stash.Volatile;
+import de.sormuras.stash.*;
+import de.sormuras.stash.compiler.stashlet.Quaestor;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
@@ -56,6 +53,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
@@ -146,6 +144,54 @@ public class Processor extends AbstractProcessor {
     return result.toString("UTF-8");
   }
 
+  private void processAllStashletMethods(Set<ExecutableElement> staticMethods) {
+    Types types = processingEnv.getTypeUtils();
+    Map<Type, ExecutableElement> spawns = new HashMap<>();
+    Map<Type, ExecutableElement> stashs = new HashMap<>();
+    for (Element accessor : staticMethods) {
+      ExecutableElement method = (ExecutableElement) accessor;
+      DeclaredType containing = (DeclaredType) method.getEnclosingElement().asType();
+      ExecutableType et = (ExecutableType) types.asMemberOf(containing, method);
+      List<? extends TypeMirror> paramTypes = et.getParameterTypes();
+      if (paramTypes.isEmpty() || paramTypes.size() > 2) {
+        error(method, "wrong number of parameters, expecting exactly 1 or 2!");
+        continue;
+      }
+      TypeMirror param0 = paramTypes.get(0);
+      if (!types.isSameType(element(ByteBuffer.class).asType(), param0)) {
+        error(method, "expected %s as first parameter, but got: %s", ByteBuffer.class, param0);
+        continue;
+      }
+      if (paramTypes.size() == 2) {
+        stashs.put(Type.type(paramTypes.get(1)), method);
+      } else {
+        spawns.put(Type.type(et.getReturnType()), method);
+      }
+    }
+    // symmetric difference
+    Set<Type> intersection = new HashSet<>(spawns.keySet());
+    intersection.retainAll(stashs.keySet());
+    Set<Type> difference = new HashSet<>();
+    difference.addAll(spawns.keySet());
+    difference.addAll(stashs.keySet());
+    difference.removeAll(intersection);
+    if (!difference.isEmpty()) {
+      for (Type singleton : difference) {
+        ExecutableElement method = spawns.get(singleton);
+        method = method == null ? stashs.get(singleton) : method;
+        error(method, "dangling stashlet", method);
+      }
+    }
+
+    for (Type type : intersection) {
+      String spawn = spawns.get(type).getSimpleName().toString();
+      String stash = stashs.get(type).getSimpleName().toString();
+      // ClassName target = ClassName.get((TypeElement) spawns.get(type).getEnclosingElement());
+      //quaestor.customs().put(type, new StaticStashlet(type, target, spawn, stash));
+      // TODO new StaticStashlet(type, target, spawn, stash);
+    }
+  }
+
   private void processAllStashAnnotatedElements(Set<? extends Element> stashAnnotatedElements) {
     for (Element stashAnnotated : stashAnnotatedElements) {
       ElementKind kind = stashAnnotated.getKind();
@@ -169,7 +215,8 @@ public class Processor extends AbstractProcessor {
     CompilationUnit unit = CompilationUnit.of(packageName);
     InterfaceDeclaration interfaceDeclaration = unit.declareInterface(simpleName);
     interfaceDeclaration.addAnnotation(Annotation.annotation(stash));
-    processStashedInterface(stashAnnotated, interfaceDeclaration);
+    Quaestor quaestor = new Quaestor();
+    processStashedInterface(quaestor, stashAnnotated, interfaceDeclaration);
     note("Interface %s was declared as:%s", stashAnnotated, unit.list(" "));
 
     // generate...
@@ -191,15 +238,25 @@ public class Processor extends AbstractProcessor {
     }
   }
 
-  private void processStashedInterface(TypeElement stashed, InterfaceDeclaration declaration) {
+  private void processStashedInterface(
+      Quaestor quaestor, TypeElement stashed, InterfaceDeclaration declaration) {
+    Set<ExecutableElement> staticMethods = new TreeSet<>();
     stashed.getInterfaces().forEach(i -> declaration.addInterface(ClassType.type(i)));
     // TODO stashed.getTypeParameters().forEach(p -> declaration.addTypeParameter(TypeParameter.of(p));
     List<ExecutableElement> methods =
         ElementFilter.methodsIn(processingEnv.getElementUtils().getAllMembers(stashed));
-    methods.removeIf(m -> /* m.isDefault() || */ m.getModifiers().contains(Modifier.STATIC));
-    methods.removeIf(m -> m.getEnclosingElement().equals(element(Object.class)));
 
     for (ExecutableElement method : methods) {
+      if (processingEnv
+          .getTypeUtils()
+          .isSameType(method.getEnclosingElement().asType(), element(Object.class).asType())) {
+        // if (method.getEnclosingElement().equals(element(Object.class))) {
+        continue;
+      }
+      if (method.getModifiers().contains(Modifier.STATIC)) {
+        staticMethods.add(method);
+        continue;
+      }
       DeclaredType declaredType = (DeclaredType) stashed.asType();
       ExecutableType et;
       try {
