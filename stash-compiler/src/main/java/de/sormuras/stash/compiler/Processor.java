@@ -240,17 +240,14 @@ public class Processor extends AbstractProcessor {
 
   private void processStashedInterface(
       Quaestor quaestor, TypeElement stashed, InterfaceDeclaration declaration) {
-    Set<ExecutableElement> staticMethods = new TreeSet<>();
+    List<ExecutableElement> staticMethods = new ArrayList<>();
     stashed.getInterfaces().forEach(i -> declaration.addInterface(ClassType.type(i)));
     // TODO stashed.getTypeParameters().forEach(p -> declaration.addTypeParameter(TypeParameter.of(p));
     List<ExecutableElement> methods =
         ElementFilter.methodsIn(processingEnv.getElementUtils().getAllMembers(stashed));
 
     for (ExecutableElement method : methods) {
-      if (processingEnv
-          .getTypeUtils()
-          .isSameType(method.getEnclosingElement().asType(), element(Object.class).asType())) {
-        // if (method.getEnclosingElement().equals(element(Object.class))) {
+      if (method.getEnclosingElement().equals(element(Object.class))) {
         continue;
       }
       if (method.getModifiers().contains(Modifier.STATIC)) {
