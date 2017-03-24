@@ -2,12 +2,10 @@ package demo;
 
 import de.sormuras.stash.Stash;
 import de.sormuras.stash.Volatile;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.UUID;
 
 @Stash
 public interface All {
@@ -35,7 +33,7 @@ public interface All {
 
   default void primitive(short value, Short boxed) {}
 
-  default void random(Random random) {}
+  default void uuid(UUID uuid) {}
 
   default void stashable() {}
 
@@ -46,17 +44,11 @@ public interface All {
     return Collections.emptyList();
   }
 
-  static Random createRandom(ByteBuffer source) {
-    return new Random(source.getLong());
+  static UUID createUUID(ByteBuffer source) {
+    return new UUID(source.getLong(), source.getLong());
   }
 
-  static ByteBuffer writeRandom(ByteBuffer target, Random random) {
-    try {
-      Field seed = Random.class.getDeclaredField("seed");
-      seed.setAccessible(true);
-      return target.putLong(((AtomicLong) seed.get(random)).get());
-    } catch (Exception e) {
-      throw new AssertionError("Expected field 'seed' in java.util.Random.class...", e);
-    }
+  static ByteBuffer writeUUID(ByteBuffer target, UUID uuid) {
+    return target.putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits());
   }
 }

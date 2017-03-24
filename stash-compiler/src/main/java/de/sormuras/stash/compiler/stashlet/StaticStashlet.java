@@ -15,6 +15,7 @@
 package de.sormuras.stash.compiler.stashlet;
 
 import de.sormuras.beethoven.Listable;
+import de.sormuras.beethoven.Name;
 import de.sormuras.beethoven.type.Type;
 import de.sormuras.stash.compiler.Stashlet;
 import java.lang.reflect.Method;
@@ -67,6 +68,11 @@ public class StaticStashlet<T> extends AbstractStashlet<T> {
   private StaticStashlet(Type type, Class<?> container, Method stashMethod, Method spawnMethod) {
     super(type, stashMethod, spawnMethod);
     this.container = Type.type(container);
+  }
+
+  public StaticStashlet(Type type, Name stashName, Name spawnName) {
+    super(type, stashName, spawnName, null, null);
+    this.container = null;
   }
 
   @Override
