@@ -13,11 +13,6 @@ class DemoTests {
   }
 
   @Test
-  void generateDemoGuard() {
-    assertEquals("demo.DemoGuard", DemoGuard.class.getCanonicalName());
-  }
-
-  @Test
   void store() {
     Demo.Impl impl = new Demo.Impl();
     assertEquals("[0, 0, 0, 0, 0] = 0", impl.toString());

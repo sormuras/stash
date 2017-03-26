@@ -34,9 +34,9 @@ public class AnyStashlet implements Stashlet {
     listing.eval("{{N:0}} bytes = new {{N:0}}(){{;}}", ByteArrayOutputStream.class);
     listing.eval("try({{N:0}} stream = new {{N:0}}(bytes)) {", ObjectOutputStream.class).newline();
     listing.eval("{{>}}stream.writeObject(object){{;}}{{<}}");
-    listing.eval("} catch({{N}} exception) { {{¶}}", Exception.class);
+    listing.eval("} catch({{N}} exception) {", Exception.class).newline();
     listing.eval("{{>}}throw new {{N}}(exception){{;}}{{<}}", Error.class);
-    listing.eval("}{{¶}}");
+    listing.add("}").newline();
     listing.add("byte[] data = bytes.toByteArray();").newline();
     listing.add("target.putInt(data.length);").newline();
     listing.add("target.put(data);").newline();
@@ -63,7 +63,7 @@ public class AnyStashlet implements Stashlet {
     listing.eval("{{>}}return stream.readObject(){{;}}{{<}}");
     listing.eval("} catch({{N}} exception) {", Exception.class).newline();
     listing.eval("{{>}}throw new {{N}}(exception){{;}}{{<}}", Error.class);
-    listing.eval("}{{¶}}");
+    listing.add("}").newline();
     return listing;
   }
 

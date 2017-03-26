@@ -184,8 +184,11 @@ public class Processor extends AbstractProcessor {
     List<CompilationUnit> generatedUnits = generator.generate();
     for (CompilationUnit generated : generatedUnits) {
       note("Generated %s", generated.toURI());
-      TypeDeclaration principal =
-          generated.getEponymousDeclaration().orElseThrow(IllegalStateException::new);
+      TypeDeclaration principal = generated.getEponymousDeclaration().orElseThrow(Error::new);
+      if (principal.isEmpty()) {
+        note("Skipping empty %s", principal.getName());
+        continue;
+      }
       try {
         String sourceName = principal.toType().getName().canonical();
         JavaFileObject file = processingEnv.getFiler().createSourceFile(sourceName);

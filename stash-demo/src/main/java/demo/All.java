@@ -11,8 +11,8 @@ import java.util.UUID;
 public interface All {
 
   static void main(String... args) {
+    System.out.println(AllIO.class);
     System.out.println(AllStash.class);
-    System.out.println(AllGuard.class);
   }
 
   default void enums(Thread.State state, Character.UnicodeScript script) {}

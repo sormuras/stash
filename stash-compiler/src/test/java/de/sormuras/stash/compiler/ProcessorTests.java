@@ -1,6 +1,7 @@
 package de.sormuras.stash.compiler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import de.sormuras.beethoven.type.Type;
 import de.sormuras.beethoven.unit.CompilationUnit;
@@ -15,21 +16,32 @@ import org.junit.jupiter.api.Test;
 class ProcessorTests {
 
   private void assertCompiles(CompilationUnit unit) throws ClassNotFoundException {
+    assertCompiles(unit, true);
+  }
+
+  private void assertCompiles(CompilationUnit unit, boolean ioPresent)
+      throws ClassNotFoundException {
     TypeDeclaration typeDeclaration = unit.getEponymousDeclaration().orElseThrow(Error::new);
     String interfaceName = unit.getPackageName() + "." + typeDeclaration.getName();
     Class<?> interfaceClass = unit.compile();
     assertEquals(interfaceName, interfaceClass.getCanonicalName());
     ClassLoader loader = interfaceClass.getClassLoader();
-    assertEquals(interfaceName + "Guard", loader.loadClass(interfaceName + "Guard").getName());
+    // assertEquals(interfaceName + "Guard", loader.loadClass(interfaceName + "Guard").getName());
     assertEquals(interfaceName + "Stash", loader.loadClass(interfaceName + "Stash").getName());
-    assertEquals(interfaceName + "IO", loader.loadClass(interfaceName + "IO").getName());
+    try {
+      assertEquals(interfaceName + "IO", loader.loadClass(interfaceName + "IO").getName());
+    } catch (ClassNotFoundException exception) {
+      if (ioPresent) {
+        fail("expected IO to be present", exception);
+      }
+    }
   }
 
   @Test
   void emptyInterfaceWithStashAnnotationCompiles() throws ClassNotFoundException {
     CompilationUnit unit = CompilationUnit.of("empty");
     unit.declareInterface("Empty").addAnnotation(Stash.class);
-    assertCompiles(unit);
+    assertCompiles(unit, false); // no method, no io
   }
 
   @Test
@@ -38,7 +50,7 @@ class ProcessorTests {
     InterfaceDeclaration single = unit.declareInterface("Single");
     single.addAnnotation(Stash.class);
     single.addInterface(Type.type(Runnable.class));
-    assertCompiles(unit);
+    assertCompiles(unit, false); // no parameter, no io
   }
 
   @Test
@@ -48,7 +60,7 @@ class ProcessorTests {
     single.addAnnotation(Stash.class);
     MethodDeclaration main = single.declareMethod(void.class, "main", Modifier.STATIC);
     main.addStatement("System.gc()");
-    assertCompiles(unit);
+    assertCompiles(unit, false); // only static, no io
   }
 
   @Test
@@ -57,7 +69,6 @@ class ProcessorTests {
     InterfaceDeclaration random = unit.declareInterface("Random");
     random.addAnnotation(Stash.class);
     random.declareMethod(void.class, "setRandom").declareParameter(Random.class, "random");
-    random.declareMethod(void.class, "setRandom2").declareParameter(Random.class, "random");
     random.declareMethod(Random.class, "getRandom");
     assertCompiles(unit);
   }
