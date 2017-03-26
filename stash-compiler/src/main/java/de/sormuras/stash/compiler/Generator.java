@@ -24,11 +24,12 @@ import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.MethodParameter;
 import de.sormuras.stash.Stash;
 import de.sormuras.stash.compiler.generator.StashBuilder;
-import de.sormuras.stash.compiler.stashlet.Quaestor;
-import de.sormuras.stash.compiler.stashlet.Query;
+import de.sormuras.stash.compiler.stashlet.AnyStashlet;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.zip.CRC32;
 import javax.annotation.Generated;
@@ -37,29 +38,27 @@ import javax.lang.model.type.MirroredTypeException;
 
 public class Generator {
 
-  private final InterfaceDeclaration interfaceDeclaration;
-  private final Stash interfaceAnnotation;
+  private final Stash stash;
+  private final InterfaceDeclaration declaration;
 
   private final CRC32 crc32;
   private final Instant now;
-  private final Quaestor quaestor;
+  private final Map<String, Stashlet> used;
+  private final InterfaceDeclaration io;
 
-  Generator(Stash interfaceAnnotation, InterfaceDeclaration interfaceDeclaration) {
-    this(interfaceAnnotation, interfaceDeclaration, new Quaestor());
-  }
+  Generator(Stash stash, InterfaceDeclaration declaration) {
+    this.stash = stash;
+    this.declaration = declaration;
 
-  Generator(
-      Stash interfaceAnnotation, InterfaceDeclaration interfaceDeclaration, Quaestor quaestor) {
-    this.interfaceAnnotation = interfaceAnnotation;
-    this.interfaceDeclaration = interfaceDeclaration;
-
-    this.now = Instant.now();
     this.crc32 = new CRC32();
-    this.quaestor = quaestor;
+    this.now = Instant.now();
+    this.used = new HashMap<>();
+
+    this.io = generateIO();
   }
 
   public InterfaceDeclaration getInterfaceDeclaration() {
-    return interfaceDeclaration;
+    return declaration;
   }
 
   private Annotation buildAnnotationGenerated() {
@@ -67,7 +66,7 @@ public class Generator {
     generated.addValue(getClass().getCanonicalName());
     generated.addValue(Stash.VERSION);
     generated.addObject("date", now.toString());
-    String comments = interfaceAnnotation.comments();
+    String comments = stash.comments();
     if (!comments.isEmpty()) {
       generated.addMember("comments", l -> l.add(comments));
     }
@@ -76,14 +75,14 @@ public class Generator {
 
   public ClassType buildSuperClass() {
     try {
-      return ClassType.type(interfaceAnnotation.classExtends());
+      return ClassType.type(stash.classExtends());
     } catch (MirroredTypeException mte) {
       return (ClassType) Type.type(mte.getTypeMirror());
     }
   }
 
   public String buildOtherName() {
-    return interfaceDeclaration.getName().toLowerCase(); // .toCamelCase();
+    return declaration.getName().toLowerCase(); // .toCamelCase();
   }
 
   public String buildMethodHash(MethodDeclaration method) {
@@ -104,11 +103,12 @@ public class Generator {
   }
 
   List<CompilationUnit> generate() {
-    String packageName = interfaceDeclaration.getCompilationUnit().getPackageName();
-    CompilationUnit stashUnit = generateStash(CompilationUnit.of(packageName));
-    // new ImportsComposer().apply(stashUnit);
-    CompilationUnit guardUnit = generateGuard(CompilationUnit.of(packageName));
-    return Arrays.asList(stashUnit, guardUnit);
+    String packageName = declaration.getCompilationUnit().getPackageName();
+    List<CompilationUnit> units = new ArrayList<>();
+    units.add(generateStash(CompilationUnit.of(packageName)));
+    units.add(generateGuard(CompilationUnit.of(packageName)));
+    units.add(io.getCompilationUnit());
+    return units;
   }
 
   // create compilation unit "DemoStash.java" with "class DemoStash implements Demo {...}"
@@ -121,22 +121,39 @@ public class Generator {
 
   // create compilation unit "DemoGuard.java" with "class DemoGuard implements Demo {...}"
   private CompilationUnit generateGuard(CompilationUnit unit) {
-    ClassDeclaration guardDeclaration = unit.declareClass(interfaceDeclaration.getName() + "Guard");
+    ClassDeclaration guardDeclaration = unit.declareClass(declaration.getName() + "Guard");
     guardDeclaration.setModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
-    guardDeclaration.addInterface(interfaceDeclaration.toType());
+    guardDeclaration.addInterface(declaration.toType());
     guardDeclaration.addAnnotation(buildAnnotationGenerated());
     return unit;
   }
 
-  public boolean isVerify() {
-    return interfaceAnnotation.verify();
+  // create compilation unit "DemoIO.java" with "interface DemoIO {...}"
+  private InterfaceDeclaration generateIO() {
+    String packageName = declaration.getCompilationUnit().getPackageName();
+    CompilationUnit unit = CompilationUnit.of(packageName);
+    return unit.declareInterface(declaration.getName() + "IO");
   }
 
-  public Stashlet<?> resolve(MethodParameter parameter) {
-    boolean isStashable = Tag.isParameterStashable(parameter);
-    boolean isEnum = Tag.isParameterEnum(parameter);
-    Query query = new Query(parameter.getType(), isStashable, isEnum);
-    return quaestor.resolve(query);
+  public boolean isVerify() {
+    return stash.verify();
+  }
+
+  public Stashlet resolve(Type type) {
+    String key = type.list();
+    return used.computeIfAbsent(key, this::computeStashlet);
+  }
+
+  private AnyStashlet anyStashlet;
+
+  private Stashlet computeStashlet(String type) {
+    Stashlet stashlet = anyStashlet; // TODO ask quaestor
+    if (stashlet == null) {
+      anyStashlet = new AnyStashlet();
+      anyStashlet.init(this, io);
+      stashlet = anyStashlet;
+    }
+    return stashlet;
   }
 
   public Listing applyCall(Listing listing, MethodDeclaration method) {

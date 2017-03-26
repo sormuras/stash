@@ -18,6 +18,7 @@ import static de.sormuras.stash.compiler.Tag.isMethodReturn;
 import static de.sormuras.stash.compiler.Tag.isParameterTime;
 
 import de.sormuras.beethoven.Listing;
+import de.sormuras.beethoven.type.Type;
 import de.sormuras.beethoven.unit.Block;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.MethodParameter;
@@ -37,24 +38,25 @@ public class StashSpawnMethodBlock extends Block {
   public Listing apply(Listing listing) {
     listing.add('{').newline().indent(1);
 
-    String source = "this." + builder.buffer.getName();
+    String buffer = "this." + builder.buffer.getName();
     builder
         .generator
         .findTimeParameter(method)
-        .ifPresent(arg -> listing.eval("long {{$}} = {{$}}.getLong(){{;}}", arg.getName(), source));
+        .ifPresent(arg -> listing.eval("long {{$}} = {{$}}.getLong(){{;}}", arg.getName(), buffer));
 
     for (MethodParameter parameter : method.getParameters()) {
       if (isParameterTime(parameter)) {
         continue;
       }
-      listing.add(parameter.getType());
+      Type type = parameter.getType();
+      listing.add(type);
       listing.add(' ');
       listing.add(parameter.getName());
       listing.add(' ');
       listing.add('=');
       listing.add(' ');
-      Stashlet<?> stashlet = builder.generator.resolve(parameter);
-      listing.add(stashlet.spawn(source, parameter.getType()));
+      Stashlet stashlet = builder.generator.resolve(type);
+      stashlet.spawn(listing, buffer, type);
       listing.add(';');
       listing.newline();
     }

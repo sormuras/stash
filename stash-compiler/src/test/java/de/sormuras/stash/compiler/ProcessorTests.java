@@ -8,6 +8,7 @@ import de.sormuras.beethoven.unit.InterfaceDeclaration;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.TypeDeclaration;
 import de.sormuras.stash.Stash;
+import java.util.Random;
 import javax.lang.model.element.Modifier;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +22,7 @@ class ProcessorTests {
     ClassLoader loader = interfaceClass.getClassLoader();
     assertEquals(interfaceName + "Guard", loader.loadClass(interfaceName + "Guard").getName());
     assertEquals(interfaceName + "Stash", loader.loadClass(interfaceName + "Stash").getName());
+    assertEquals(interfaceName + "IO", loader.loadClass(interfaceName + "IO").getName());
   }
 
   @Test
@@ -46,6 +48,17 @@ class ProcessorTests {
     single.addAnnotation(Stash.class);
     MethodDeclaration main = single.declareMethod(void.class, "main", Modifier.STATIC);
     main.addStatement("System.gc()");
+    assertCompiles(unit);
+  }
+
+  @Test
+  void randomPropertyInterfaceWithStashAnnotationCompiles() throws ClassNotFoundException {
+    CompilationUnit unit = CompilationUnit.of("random");
+    InterfaceDeclaration random = unit.declareInterface("Random");
+    random.addAnnotation(Stash.class);
+    random.declareMethod(void.class, "setRandom").declareParameter(Random.class, "random");
+    random.declareMethod(void.class, "setRandom2").declareParameter(Random.class, "random");
+    random.declareMethod(Random.class, "getRandom");
     assertCompiles(unit);
   }
 }

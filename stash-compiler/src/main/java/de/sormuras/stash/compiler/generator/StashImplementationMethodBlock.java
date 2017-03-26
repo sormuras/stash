@@ -30,13 +30,11 @@ public class StashImplementationMethodBlock extends Block {
   private final StashBuilder builder;
   private final MethodDeclaration method;
   private final String hash;
-  private final String target;
 
   StashImplementationMethodBlock(StashBuilder builder, MethodDeclaration method, String hash) {
     this.builder = builder;
     this.method = method;
     this.hash = hash;
-    this.target = "this." + builder.buffer.getName();
   }
 
   @Override
@@ -45,17 +43,18 @@ public class StashImplementationMethodBlock extends Block {
 
     boolean record = !isMethodVolatile(method);
     boolean verify = builder.generator.isVerify() && !method.getParameters().isEmpty();
+    String buffer = "this." + builder.buffer.getName();
     if (record) {
-      listing.eval("{{$}}.putInt({{$}}){{;}}", target, hash);
+      listing.eval("{{$}}.putInt({{$}}){{;}}", buffer, hash);
       if (verify) {
-        listing.eval("{{$}}.mark(){{;}}", target);
+        listing.eval("{{$}}.mark(){{;}}", buffer);
       }
       builder
           .generator
           .findTimeParameter(method)
           .ifPresent(
-              (arg) -> {
-                listing.add(target);
+              arg -> {
+                listing.add(buffer);
                 listing.add(".putLong(");
                 listing.add(arg.getName());
                 listing.add(" = ");
@@ -67,23 +66,23 @@ public class StashImplementationMethodBlock extends Block {
         if (isParameterTime(parameter)) {
           continue;
         }
-        Stashlet<?> stashlet = builder.generator.resolve(parameter);
-        listing.add(stashlet.stash(target, parameter.getName()));
+        Stashlet stashlet = builder.generator.resolve(parameter.getType());
+        stashlet.stash(listing, buffer, parameter.getName());
         listing.add(';');
         listing.newline();
       }
       if (verify) {
-        listing.eval("{{$}}.reset(){{;}}", target);
+        listing.eval("{{$}}.reset(){{;}}", buffer);
       }
     }
 
-    applyCallAndReturn(listing);
+    applyCallAndReturn(listing, buffer);
 
     listing.indent(-1).add('}').newline();
     return listing;
   }
 
-  private void applyCallAndReturn(Listing listing) {
+  private void applyCallAndReturn(Listing listing, String buffer) {
     boolean returns = isMethodReturn(method);
     if (isMethodVolatile(method)) {
       if (returns) {
@@ -103,7 +102,7 @@ public class StashImplementationMethodBlock extends Block {
     }
 
     // "commit"
-    listing.eval("{{$}}.putLong(0, ++this.{{$}}){{;}}", target, builder.counter.getName());
+    listing.eval("{{$}}.putLong(0, ++this.{{$}}){{;}}", buffer, builder.counter.getName());
 
     if (returns) {
       listing.add("return ").add(result);

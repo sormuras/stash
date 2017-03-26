@@ -36,8 +36,6 @@ import de.sormuras.stash.Stash;
 import de.sormuras.stash.Stashable;
 import de.sormuras.stash.Time;
 import de.sormuras.stash.Volatile;
-import de.sormuras.stash.compiler.stashlet.Quaestor;
-import de.sormuras.stash.compiler.stashlet.StaticStashlet;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -178,12 +176,11 @@ public class Processor extends AbstractProcessor {
     CompilationUnit unit = CompilationUnit.of(packageName);
     InterfaceDeclaration interfaceDeclaration = unit.declareInterface(simpleName);
     interfaceDeclaration.addAnnotation(Annotation.annotation(stash));
-    Quaestor quaestor = new Quaestor();
-    processStashedInterface(stashAnnotated, interfaceDeclaration, quaestor);
+    processStashedInterface(stashAnnotated, interfaceDeclaration);
     note("Interface %s was declared as:%s", stashAnnotated, unit.list(" "));
 
     // generate...
-    Generator generator = new Generator(stash, interfaceDeclaration, quaestor);
+    Generator generator = new Generator(stash, interfaceDeclaration);
     List<CompilationUnit> generatedUnits = generator.generate();
     for (CompilationUnit generated : generatedUnits) {
       note("Generated %s", generated.toURI());
@@ -201,8 +198,7 @@ public class Processor extends AbstractProcessor {
     }
   }
 
-  private void processStashedInterface(
-      TypeElement stashed, InterfaceDeclaration declaration, Quaestor quaestor) {
+  private void processStashedInterface(TypeElement stashed, InterfaceDeclaration declaration) {
     List<ExecutableElement> staticMethods = new ArrayList<>();
     stashed.getInterfaces().forEach(i -> declaration.addInterface(ClassType.type(i)));
     // TODO stashed.getTypeParameters().forEach(p -> declaration.addTypeParameter(TypeParameter.of(p));
@@ -229,7 +225,7 @@ public class Processor extends AbstractProcessor {
     }
 
     // turn static stash/spawn method pair into stashlet
-    processAllStashletMethods(staticMethods, quaestor);
+    processAllStashletMethods(staticMethods);
   }
 
   private MethodDeclaration processStashedMethod(
@@ -267,8 +263,7 @@ public class Processor extends AbstractProcessor {
     return declaration;
   }
 
-  private void processAllStashletMethods(
-      Collection<ExecutableElement> staticMethods, Quaestor quaestor) {
+  private void processAllStashletMethods(Collection<ExecutableElement> staticMethods) {
     Types types = processingEnv.getTypeUtils();
     Map<Type, ExecutableElement> spawns = new HashMap<>();
     Map<Type, ExecutableElement> stashs = new HashMap<>();
@@ -311,7 +306,7 @@ public class Processor extends AbstractProcessor {
     for (Type type : intersection) {
       Name stashName = Name.name(stashs.get(type));
       Name spawnName = Name.name(spawns.get(type));
-      quaestor.customs().put(type, new StaticStashlet(type, stashName, spawnName));
+      // TODO quaestor.customs().put(type, new StaticStashlet(type, stashName, spawnName));
     }
   }
 }

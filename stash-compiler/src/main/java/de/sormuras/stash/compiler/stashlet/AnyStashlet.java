@@ -1,56 +1,103 @@
-/*
- * Copyright (C) 2017 Christian Stein
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
 package de.sormuras.stash.compiler.stashlet;
 
-import de.sormuras.beethoven.Listable;
-import de.sormuras.beethoven.Name;
+import static javax.lang.model.element.Modifier.STATIC;
+
+import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.type.Type;
-import de.sormuras.stash.Stashable.Buffer;
+import de.sormuras.beethoven.unit.Block;
+import de.sormuras.beethoven.unit.InterfaceDeclaration;
+import de.sormuras.beethoven.unit.MethodDeclaration;
+import de.sormuras.stash.compiler.Generator;
 import de.sormuras.stash.compiler.Stashlet;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
-class AnyStashlet implements Stashlet<Object> {
+public class AnyStashlet implements Stashlet {
 
-  private static final Name STASH = Name.reflect(Buffer.class, "stashAny");
-  private static final Name SPAWN = Name.reflect(Buffer.class, "spawnAny");
+  public static ByteBuffer stashAny(ByteBuffer target, Object object) {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    try (ObjectOutputStream stream = new ObjectOutputStream(bytes)) {
+      stream.writeObject(object);
+    } catch (Exception exception) {
+      throw new Error(exception);
+    }
+    byte[] data = bytes.toByteArray();
+    target.putInt(data.length);
+    target.put(data);
+    return target;
+  }
+
+  private static Listing buildStashAnyBody(Listing listing) {
+    listing.eval("{{N:0}} bytes = new {{N:0}}(){{;}}", ByteArrayOutputStream.class);
+    listing.eval("try({{N:0}} stream = new {{N:0}}(bytes)) {", ObjectOutputStream.class).newline();
+    listing.eval("{{>}}stream.writeObject(object){{;}}{{<}}");
+    listing.eval("} catch({{N}} exception) { {{¶}}", Exception.class);
+    listing.eval("{{>}}throw new {{N}}(exception){{;}}{{<}}", Error.class);
+    listing.eval("}{{¶}}");
+    listing.add("byte[] data = bytes.toByteArray();").newline();
+    listing.add("target.putInt(data.length);").newline();
+    listing.add("target.put(data);").newline();
+    listing.add("return target;").newline();
+    return listing;
+  }
+
+  public static Object spawnAny(ByteBuffer source) {
+    byte[] data = new byte[source.getInt()];
+    source.get(data);
+    ByteArrayInputStream bytes = new ByteArrayInputStream(data);
+    try (ObjectInputStream stream = new ObjectInputStream(bytes)) {
+      return stream.readObject();
+    } catch (Exception exception) {
+      throw new Error(exception);
+    }
+  }
+
+  private static Listing buildSpawnAnyBody(Listing listing) {
+    listing.add("byte[] data = new byte[source.getInt()];").newline();
+    listing.add("source.get(data);").newline();
+    listing.eval("{{N:0}} bytes = new {{N:0}}(data){{;}}", ByteArrayInputStream.class);
+    listing.eval("try({{N:0}} stream = new {{N:0}}(bytes)) {", ObjectInputStream.class).newline();
+    listing.eval("{{>}}return stream.readObject(){{;}}{{<}}");
+    listing.eval("} catch({{N}} exception) {", Exception.class).newline();
+    listing.eval("{{>}}throw new {{N}}(exception){{;}}{{<}}", Error.class);
+    listing.eval("}{{¶}}");
+    return listing;
+  }
+
+  private MethodDeclaration stashAny;
+  private MethodDeclaration spawnAny;
 
   @Override
-  public Type forType() {
-    return Type.type(Object.class);
+  public void init(Generator generator, InterfaceDeclaration io) {
+    this.stashAny = io.declareMethod(ByteBuffer.class, "stashAny", STATIC);
+    stashAny.declareParameter(ByteBuffer.class, "target");
+    stashAny.declareParameter(Object.class, "object");
+    stashAny.setBody(new Block().add(AnyStashlet::buildStashAnyBody));
+
+    this.spawnAny = io.declareMethod(Object.class, "spawnAny", STATIC);
+    spawnAny.declareParameter(ByteBuffer.class, "source");
+    spawnAny.setBody(new Block().add(AnyStashlet::buildSpawnAnyBody));
   }
 
   @Override
-  public ByteBuffer stash(ByteBuffer target, Object instance) {
-    return Buffer.stashAny(target, instance);
+  public Listing stash(Listing listing, String buffer, String parameterName) {
+    listing.add(stashAny.getEnclosingDeclaration().getName()).add('.');
+    return stashAny.applyCall(listing, buffer, parameterName);
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public Object spawn(ByteBuffer source, Class<?> type) {
-    return Buffer.spawnAny(source);
-  }
-
-  @Override
-  public Listable stash(String TARGET, String name) {
-    return listing -> listing.add(STASH).add("(" + TARGET + ", " + name + ")");
-  }
-
-  @Override
-  public Listable spawn(String SOURCE, Type type) {
-    Listable cast = listing -> listing.add('(').add(type).add(')');
-    Listable call = listing -> listing.add(SPAWN).add('(').add(SOURCE).add(')');
-    return listing -> listing.add(cast).add(' ').add(call);
+  public Listing spawn(Listing listing, String buffer, Type parameterType) {
+    // cast
+    listing.add('(');
+    listing.add(parameterType);
+    listing.add(')');
+    listing.add(' ');
+    // call
+    listing.add(spawnAny.getEnclosingDeclaration().getName()).add('.');
+    spawnAny.applyCall(listing, buffer);
+    return listing;
   }
 }
