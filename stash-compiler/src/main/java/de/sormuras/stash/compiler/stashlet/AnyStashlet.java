@@ -5,7 +5,6 @@ import static javax.lang.model.element.Modifier.STATIC;
 import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.type.Type;
 import de.sormuras.beethoven.unit.Block;
-import de.sormuras.beethoven.unit.InterfaceDeclaration;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.stash.compiler.Generator;
 import de.sormuras.stash.compiler.Stashlet;
@@ -14,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
+import java.util.logging.Logger;
 
 public class AnyStashlet implements Stashlet {
 
@@ -69,17 +69,25 @@ public class AnyStashlet implements Stashlet {
 
   private MethodDeclaration stashAny;
   private MethodDeclaration spawnAny;
+  private boolean initialized = false;
 
   @Override
-  public void init(Generator generator, InterfaceDeclaration io) {
-    this.stashAny = io.declareMethod(ByteBuffer.class, "stashAny", STATIC);
+  public void init(Type type, Generator generator) {
+    Logger.getLogger(getClass().getName()).warning("type " + type + " handled by AnyStashlet!");
+
+    if (initialized) {
+      return;
+    }
+    this.stashAny = generator.getIo().declareMethod(ByteBuffer.class, "stashAny", STATIC);
     stashAny.declareParameter(ByteBuffer.class, "target");
     stashAny.declareParameter(Object.class, "object");
     stashAny.setBody(new Block().add(AnyStashlet::buildStashAnyBody));
 
-    this.spawnAny = io.declareMethod(Object.class, "spawnAny", STATIC);
+    this.spawnAny = generator.getIo().declareMethod(Object.class, "spawnAny", STATIC);
     spawnAny.declareParameter(ByteBuffer.class, "source");
     spawnAny.setBody(new Block().add(AnyStashlet::buildSpawnAnyBody));
+
+    this.initialized = true;
   }
 
   @Override

@@ -24,12 +24,9 @@ import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.MethodParameter;
 import de.sormuras.stash.Stash;
 import de.sormuras.stash.compiler.generator.StashBuilder;
-import de.sormuras.stash.compiler.stashlet.AnyStashlet;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.zip.CRC32;
 import javax.annotation.Generated;
@@ -43,8 +40,8 @@ public class Generator {
 
   private final CRC32 crc32;
   private final Instant now;
-  private final Map<String, Stashlet> used;
   private final InterfaceDeclaration io;
+  private final Quaestor quaestor;
 
   Generator(Stash stash, InterfaceDeclaration declaration) {
     this.stash = stash;
@@ -52,13 +49,16 @@ public class Generator {
 
     this.crc32 = new CRC32();
     this.now = Instant.now();
-    this.used = new HashMap<>();
-
     this.io = generateIO();
+    this.quaestor = new Quaestor(this);
   }
 
   public InterfaceDeclaration getInterfaceDeclaration() {
     return declaration;
+  }
+
+  public InterfaceDeclaration getIo() {
+    return io;
   }
 
   private Annotation buildAnnotationGenerated() {
@@ -140,20 +140,7 @@ public class Generator {
   }
 
   public Stashlet resolve(Type type) {
-    String key = type.list();
-    return used.computeIfAbsent(key, this::computeStashlet);
-  }
-
-  private AnyStashlet anyStashlet;
-
-  private Stashlet computeStashlet(String type) {
-    Stashlet stashlet = anyStashlet; // TODO ask quaestor
-    if (stashlet == null) {
-      anyStashlet = new AnyStashlet();
-      anyStashlet.init(this, io);
-      stashlet = anyStashlet;
-    }
-    return stashlet;
+    return quaestor.resolve(type);
   }
 
   public Listing applyCall(Listing listing, MethodDeclaration method) {
