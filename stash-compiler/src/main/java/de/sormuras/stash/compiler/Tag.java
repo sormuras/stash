@@ -1,5 +1,6 @@
 package de.sormuras.stash.compiler;
 
+import de.sormuras.beethoven.type.Type;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.MethodParameter;
 
@@ -9,8 +10,8 @@ public enum Tag {
   METHOD_IS_VOLATILE,
   METHOD_IS_DIRECT,
 
-  PARAMETER_IS_ENUM,
-  PARAMETER_IS_STASHABLE,
+  TYPE_IS_ENUM,
+  TYPE_IS_STASHABLE,
   PARAMETER_IS_TIME;
 
   public static boolean isMethodChainable(MethodDeclaration method) {
@@ -25,12 +26,12 @@ public enum Tag {
     return !method.getReturnType().isVoid();
   }
 
-  public static boolean isParameterEnum(MethodParameter parameter) {
-    return Boolean.TRUE.equals(parameter.getTags().get(PARAMETER_IS_ENUM));
+  public static boolean isTypeEnum(Type type) {
+    return Boolean.TRUE.equals(type.getTags().get(TYPE_IS_ENUM));
   }
 
-  public static boolean isParameterStashable(MethodParameter parameter) {
-    return Boolean.TRUE.equals(parameter.getTags().get(PARAMETER_IS_STASHABLE));
+  public static boolean isTypeStashable(Type type) {
+    return Boolean.TRUE.equals(type.getTags().get(TYPE_IS_STASHABLE));
   }
 
   public static boolean isParameterTime(MethodParameter parameter) {
@@ -53,12 +54,12 @@ public enum Tag {
     method.getTags().put(METHOD_IS_DIRECT, isDirect);
   }
 
-  static void setParameterIsEnum(MethodParameter parameter, boolean isEnum) {
-    parameter.getTags().put(PARAMETER_IS_ENUM, isEnum);
+  static void setTypeIsEnum(Type type, boolean isEnum) {
+    type.getTags().put(TYPE_IS_ENUM, isEnum);
   }
 
-  static void setParameterIsStashable(MethodParameter parameter, boolean isStashable) {
-    parameter.getTags().put(PARAMETER_IS_STASHABLE, isStashable);
+  static void setTypeIsStashable(Type type, boolean isStashable) {
+    type.getTags().put(TYPE_IS_STASHABLE, isStashable);
   }
 
   static void setParameterIsTime(MethodParameter parameter, boolean isTime) {

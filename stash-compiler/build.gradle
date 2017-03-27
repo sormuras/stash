@@ -21,7 +21,7 @@ jar {
     doLast {
         logger.info "$archiveName created. It contains:"
 
-        ZipInputStream zip = new ZipInputStream(archivePath.toURL().openStream())
+        ZipInputStream zip = new ZipInputStream(archivePath.toURI().toURL().openStream())
         while(true) {
             ZipEntry e = zip.getNextEntry()
             if (e == null)

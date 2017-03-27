@@ -18,9 +18,9 @@ import static de.sormuras.stash.compiler.Tag.setMethodIsBase;
 import static de.sormuras.stash.compiler.Tag.setMethodIsChainable;
 import static de.sormuras.stash.compiler.Tag.setMethodIsDirect;
 import static de.sormuras.stash.compiler.Tag.setMethodIsVolatile;
-import static de.sormuras.stash.compiler.Tag.setParameterIsEnum;
-import static de.sormuras.stash.compiler.Tag.setParameterIsStashable;
 import static de.sormuras.stash.compiler.Tag.setParameterIsTime;
+import static de.sormuras.stash.compiler.Tag.setTypeIsEnum;
+import static de.sormuras.stash.compiler.Tag.setTypeIsStashable;
 import static java.lang.String.format;
 
 import de.sormuras.beethoven.Annotation;
@@ -36,12 +36,8 @@ import de.sormuras.stash.Stash;
 import de.sormuras.stash.Stashable;
 import de.sormuras.stash.Time;
 import de.sormuras.stash.Volatile;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -118,39 +114,9 @@ public class Processor extends AbstractProcessor {
     if (round.processingOver()) {
       return true;
     }
-    if (roundCounter == 0) {
-      copyStashable();
-    }
     processAllStashAnnotatedElements(round.getElementsAnnotatedWith(Stash.class));
     roundCounter++;
     return true;
-  }
-
-  private void copyStashable() {
-    try {
-      String sourceName = Stashable.class.getCanonicalName();
-      String sourceText = loadJavaSource(sourceName.replace('.', '/') + ".java");
-      JavaFileObject file = processingEnv.getFiler().createSourceFile(sourceName);
-      try (PrintStream stream = new PrintStream(file.openOutputStream(), false, "UTF-8")) {
-        stream.print(sourceText);
-      }
-    } catch (Exception exception) {
-      error(null, "Stashable.java creation failed: %s", exception.toString());
-    }
-  }
-
-  private String loadJavaSource(String name) throws Exception {
-    InputStream inputStream = getClass().getClassLoader().getResourceAsStream(name);
-    if (inputStream == null) {
-      inputStream = Files.newInputStream(Paths.get("../stash-api/src/main/java", name));
-    }
-    ByteArrayOutputStream result = new ByteArrayOutputStream();
-    byte[] buffer = new byte[1024];
-    int length;
-    while ((length = inputStream.read(buffer)) != -1) {
-      result.write(buffer, 0, length);
-    }
-    return result.toString("UTF-8");
   }
 
   private void processAllStashAnnotatedElements(Set<? extends Element> stashAnnotatedElements) {
@@ -249,11 +215,12 @@ public class Processor extends AbstractProcessor {
       Element element = processingEnv.getTypeUtils().asElement(type);
       VariableElement parameter = parameters.get(index);
       String name = parameter.getSimpleName().toString();
+      Type parameterType = Type.type(type);
       MethodParameter methodParameter = declaration.declareParameter(Type.type(type), name);
       methodParameter.setFinal(parameter.getModifiers().contains(Modifier.FINAL));
       methodParameter.addAnnotations(Type.Mirrors.annotations(parameter));
-      setParameterIsEnum(methodParameter, element != null && element.getKind() == ElementKind.ENUM);
-      setParameterIsStashable(methodParameter, isAssignable(type, Stashable.class));
+      setTypeIsEnum(parameterType, element != null && element.getKind() == ElementKind.ENUM);
+      setTypeIsStashable(parameterType, isAssignable(type, Stashable.class));
       setParameterIsTime(methodParameter, parameter.getAnnotation(Time.class) != null);
     }
     // calculate flags and other properties

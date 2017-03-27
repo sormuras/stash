@@ -5,6 +5,5 @@ plugins {
 dependencies {
     apt(project(':stash-compiler'))
 
-    // api(project(':stash-api'))
     compile(project(':stash-compiler'))
 }

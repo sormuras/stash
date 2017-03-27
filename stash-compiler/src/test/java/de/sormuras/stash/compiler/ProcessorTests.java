@@ -10,6 +10,7 @@ import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.TypeDeclaration;
 import de.sormuras.stash.Stash;
 import java.util.Random;
+import java.util.UUID;
 import javax.lang.model.element.Modifier;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +33,7 @@ class ProcessorTests {
       assertEquals(interfaceName + "IO", loader.loadClass(interfaceName + "IO").getName());
     } catch (ClassNotFoundException exception) {
       if (ioPresent) {
-        fail("expected IO to be present", exception);
+        fail("expected IO to be present:" + exception.getMessage());
       }
     }
   }
@@ -71,5 +72,15 @@ class ProcessorTests {
     random.declareMethod(void.class, "setRandom").declareParameter(Random.class, "random");
     random.declareMethod(Random.class, "getRandom");
     assertCompiles(unit);
+  }
+
+  @Test
+  void uuidPropertyInterfaceWithStashAnnotationCompiles() throws ClassNotFoundException {
+    CompilationUnit unit = CompilationUnit.of("service");
+    InterfaceDeclaration random = unit.declareInterface("Service");
+    random.addAnnotation(Stash.class);
+    random.declareMethod(void.class, "setUUID").declareParameter(UUID.class, "uuid");
+    random.declareMethod(UUID.class, "getUUID");
+    assertCompiles(unit, true);
   }
 }
