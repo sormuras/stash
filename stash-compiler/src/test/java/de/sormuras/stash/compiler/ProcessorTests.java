@@ -81,6 +81,6 @@ class ProcessorTests {
     random.addAnnotation(Stash.class);
     random.declareMethod(void.class, "setUUID").declareParameter(UUID.class, "uuid");
     random.declareMethod(UUID.class, "getUUID");
-    assertCompiles(unit, true);
+    assertCompiles(unit, false);
   }
 }

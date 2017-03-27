@@ -24,6 +24,10 @@ public interface Stashlet {
 
   Listing spawn(Listing listing, String buffer, Type parameterType);
 
+  default StringBuilder toStringBuilder(StringBuilder builder) {
+    return builder.append(forType()).append(" -> ").append(toString());
+  }
+
   @FunctionalInterface
   interface StashFunction<T> extends BiFunction<ByteBuffer, T, ByteBuffer> {
 

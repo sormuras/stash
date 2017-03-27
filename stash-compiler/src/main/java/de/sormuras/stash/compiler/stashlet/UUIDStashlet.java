@@ -1,4 +1,4 @@
-package demo;
+package de.sormuras.stash.compiler.stashlet;
 
 import de.sormuras.beethoven.Listing;
 import de.sormuras.beethoven.type.Type;

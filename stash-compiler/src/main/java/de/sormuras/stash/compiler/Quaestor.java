@@ -9,11 +9,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
-import java.util.logging.Logger;
 
-class Quaestor {
+class Quaestor implements Iterable<Stashlet> {
 
   private final Generator generator;
   private final Map<Type, Stashlet> cache;
@@ -33,8 +33,6 @@ class Quaestor {
     this.services = mapServices();
     this.stashableStashlet = new StashableStashlet();
     this.anyStashlet = new AnyStashlet();
-
-    Logger.getLogger(Quaestor.class.getName()).warning("created " + this);
   }
 
   Stashlet resolve(Type type) {
@@ -56,30 +54,26 @@ class Quaestor {
     return anyStashlet;
   }
 
-  // @Override
-  public Iterator<Stashlet> iterator() {
-    ArrayList<Stashlet> all = new ArrayList<>();
+  private List<Stashlet> getAllStashlets() {
+    List<Stashlet> all = new ArrayList<>();
     all.addAll(customs.values());
     all.addAll(services.values());
     all.addAll(new HashSet<>(basics.values()));
     all.add(stashableStashlet);
     // TODO all.add(enumStashlet);
     all.add(anyStashlet);
-    return all.listIterator();
+    return all;
+  }
+
+  @Override
+  public Iterator<Stashlet> iterator() {
+    return getAllStashlets().listIterator();
   }
 
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    iterator()
-        .forEachRemaining(
-            stashlet ->
-                builder
-                    .append("  ")
-                    .append(stashlet.forType())
-                    .append(" -> ")
-                    .append(stashlet)
-                    .append('\n'));
+    iterator().forEachRemaining(stashlet -> stashlet.toStringBuilder(builder).append('\n'));
     return "Quaestor{\n" + builder + "}";
   }
 
@@ -105,10 +99,8 @@ class Quaestor {
   }
 
   private static Map<Type, Stashlet> mapServices() {
-    Logger.getLogger(Quaestor.class.getName()).warning("loading " + Stashlet.class + "...");
     Map<Type, Stashlet> map = new LinkedHashMap<>();
     for (Stashlet stashlet : ServiceLoader.load(Stashlet.class)) {
-      Logger.getLogger(Quaestor.class.getName()).warning("loaded " + stashlet);
       map.put(stashlet.forType(), stashlet);
     }
     return map;
