@@ -216,7 +216,7 @@ public class Processor extends AbstractProcessor {
       VariableElement parameter = parameters.get(index);
       String name = parameter.getSimpleName().toString();
       Type parameterType = Type.type(type);
-      MethodParameter methodParameter = declaration.declareParameter(Type.type(type), name);
+      MethodParameter methodParameter = declaration.declareParameter(parameterType, name);
       methodParameter.setFinal(parameter.getModifiers().contains(Modifier.FINAL));
       methodParameter.addAnnotations(Type.Mirrors.annotations(parameter));
       setTypeIsEnum(parameterType, element != null && element.getKind() == ElementKind.ENUM);

@@ -2,6 +2,7 @@ package de.sormuras.stash.compiler;
 
 import de.sormuras.beethoven.type.Type;
 import de.sormuras.stash.compiler.stashlet.AnyStashlet;
+import de.sormuras.stash.compiler.stashlet.EnumStashlet;
 import de.sormuras.stash.compiler.stashlet.PrimitiveStashlet;
 import de.sormuras.stash.compiler.stashlet.StashableStashlet;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ class Quaestor implements Iterable<Stashlet> {
   private final Map<Type, Stashlet> cache;
 
   private final AnyStashlet anyStashlet;
+  private final EnumStashlet enumStashlet;
   private final StashableStashlet stashableStashlet;
   private final Map<Type, Stashlet> basics;
   private final Map<Type, Stashlet> customs;
@@ -32,6 +34,7 @@ class Quaestor implements Iterable<Stashlet> {
     this.basics = mapBasics();
     this.services = mapServices();
     this.stashableStashlet = new StashableStashlet();
+    this.enumStashlet = new EnumStashlet();
     this.anyStashlet = new AnyStashlet();
   }
 
@@ -50,7 +53,7 @@ class Quaestor implements Iterable<Stashlet> {
     if (services.containsKey(type)) return services.get(type);
     if (basics.containsKey(type)) return basics.get(type);
     if (Tag.isTypeStashable(type)) return stashableStashlet;
-    // TODO if (Tag.isTypeEnum(type)) return enumStashlet;
+    if (Tag.isTypeEnum(type)) return enumStashlet;
     return anyStashlet;
   }
 
@@ -60,7 +63,7 @@ class Quaestor implements Iterable<Stashlet> {
     all.addAll(services.values());
     all.addAll(new HashSet<>(basics.values()));
     all.add(stashableStashlet);
-    // TODO all.add(enumStashlet);
+    all.add(enumStashlet);
     all.add(anyStashlet);
     return all;
   }

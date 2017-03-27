@@ -132,7 +132,9 @@ public class Generator {
   private InterfaceDeclaration generateIO() {
     String packageName = declaration.getCompilationUnit().getPackageName();
     CompilationUnit unit = CompilationUnit.of(packageName);
-    return unit.declareInterface(declaration.getName() + "IO");
+    InterfaceDeclaration ioDeclaration = unit.declareInterface(declaration.getName() + "IO");
+    ioDeclaration.addAnnotation(buildAnnotationGenerated());
+    return ioDeclaration;
   }
 
   public boolean isVerify() {
