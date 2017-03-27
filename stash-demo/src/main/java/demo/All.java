@@ -4,6 +4,7 @@ import de.sormuras.stash.Stash;
 import de.sormuras.stash.Volatile;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +36,8 @@ public interface All {
 
   default void uuid(UUID uuid) {}
 
+  default void date(Date date) {}
+
   default void stashable() {}
 
   default void string(String string, CharSequence sequence) {}
@@ -44,11 +47,11 @@ public interface All {
     return Collections.emptyList();
   }
 
-  static UUID createUUID(ByteBuffer source) {
-    return new UUID(source.getLong(), source.getLong());
+  static Date createDate(ByteBuffer source) {
+    return new Date(source.getLong());
   }
 
-  static ByteBuffer writeUUID(ByteBuffer target, UUID uuid) {
-    return target.putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits());
+  static ByteBuffer writeDate(ByteBuffer target, Date date) {
+    return target.putLong(date.getTime());
   }
 }

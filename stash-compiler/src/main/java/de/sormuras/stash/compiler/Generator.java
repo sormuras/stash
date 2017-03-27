@@ -61,6 +61,10 @@ public class Generator {
     return io;
   }
 
+  public Quaestor getQuaestor() {
+    return quaestor;
+  }
+
   private Annotation buildAnnotationGenerated() {
     Annotation generated = Annotation.annotation(Generated.class);
     generated.addValue(getClass().getCanonicalName());

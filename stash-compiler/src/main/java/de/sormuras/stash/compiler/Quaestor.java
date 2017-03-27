@@ -2,6 +2,7 @@ package de.sormuras.stash.compiler;
 
 import de.sormuras.beethoven.type.Type;
 import de.sormuras.stash.compiler.stashlet.AnyStashlet;
+import de.sormuras.stash.compiler.stashlet.BooleanStashlet;
 import de.sormuras.stash.compiler.stashlet.EnumStashlet;
 import de.sormuras.stash.compiler.stashlet.PrimitiveStashlet;
 import de.sormuras.stash.compiler.stashlet.StashableStashlet;
@@ -36,6 +37,10 @@ class Quaestor implements Iterable<Stashlet> {
     this.stashableStashlet = new StashableStashlet();
     this.enumStashlet = new EnumStashlet();
     this.anyStashlet = new AnyStashlet();
+  }
+
+  public Map<Type, Stashlet> getCustoms() {
+    return customs;
   }
 
   Stashlet resolve(Type type) {
@@ -98,6 +103,9 @@ class Quaestor implements Iterable<Stashlet> {
     map.put(Type.type(Integer.class), map.get(Type.type(int.class)));
     map.put(Type.type(Long.class), map.get(Type.type(long.class)));
     map.put(Type.type(Short.class), map.get(Type.type(short.class)));
+    // boolean is special
+    map.put(Type.type(boolean.class), new BooleanStashlet());
+    map.put(Type.type(Boolean.class), map.get(Type.type(boolean.class)));
     return map;
   }
 
