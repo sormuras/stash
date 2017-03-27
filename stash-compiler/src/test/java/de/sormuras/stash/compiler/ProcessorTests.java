@@ -9,6 +9,8 @@ import de.sormuras.beethoven.unit.InterfaceDeclaration;
 import de.sormuras.beethoven.unit.MethodDeclaration;
 import de.sormuras.beethoven.unit.TypeDeclaration;
 import de.sormuras.stash.Stash;
+import de.sormuras.stash.compiler.stashlet.UUIDStashlet;
+import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.UUID;
 import javax.lang.model.element.Modifier;
@@ -82,5 +84,11 @@ class ProcessorTests {
     random.declareMethod(void.class, "setUUID").declareParameter(UUID.class, "uuid");
     random.declareMethod(UUID.class, "getUUID");
     assertCompiles(unit, false);
+
+    ByteBuffer buffer = ByteBuffer.allocate(1000);
+    long start = buffer.position();
+    UUIDStashlet.stash(buffer, UUID.randomUUID());
+    long actual = buffer.position() - start;
+    assertEquals(8 + 8, actual); // two longs
   }
 }
