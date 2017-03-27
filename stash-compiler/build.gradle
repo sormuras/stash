@@ -1,34 +1,4 @@
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-
 dependencies {
-    compile(project(':stash-api'))
-    compile("de.sormuras:beethoven:$beethovenVersion")
-}
-
-jar {
-    // include api and compiler sources
-    from ('../stash-api/src/main/java') {
-        include '**/*.java'
-    }
-    from ('src/main/java') {
-        include '**/*.java'
-    }
-    // include compile dependencies, like beethoven
-    from {
-        configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-    doLast {
-        logger.info "$archiveName created. It contains:"
-
-        ZipInputStream zip = new ZipInputStream(archivePath.toURI().toURL().openStream())
-        while(true) {
-            ZipEntry e = zip.getNextEntry()
-            if (e == null)
-                break
-            if (e.isDirectory())
-                continue
-            logger.info " -> " + e.getName()
-        }
-    }
+    api(project(':stash-api'))
+    implementation("de.sormuras:beethoven:$beethovenVersion")
 }
