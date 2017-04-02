@@ -27,13 +27,13 @@ class Quaestor implements Iterable<Stashlet> {
   private final Map<Type, Stashlet> customs;
   private final Map<Type, Stashlet> services;
 
-  Quaestor(Generator generator) {
+  Quaestor(Generator generator, ClassLoader loader) {
     this.generator = generator;
     this.cache = new HashMap<>();
 
     this.customs = new LinkedHashMap<>();
     this.basics = mapBasics();
-    this.services = mapServices();
+    this.services = mapServices(loader);
     this.stashableStashlet = new StashableStashlet();
     this.enumStashlet = new EnumStashlet();
     this.anyStashlet = new AnyStashlet();
@@ -109,9 +109,9 @@ class Quaestor implements Iterable<Stashlet> {
     return map;
   }
 
-  private static Map<Type, Stashlet> mapServices() {
+  private static Map<Type, Stashlet> mapServices(ClassLoader loader) {
     Map<Type, Stashlet> map = new LinkedHashMap<>();
-    for (Stashlet stashlet : ServiceLoader.load(Stashlet.class)) {
+    for (Stashlet stashlet : ServiceLoader.load(Stashlet.class, loader)) {
       map.put(stashlet.forType(), stashlet);
     }
     return map;

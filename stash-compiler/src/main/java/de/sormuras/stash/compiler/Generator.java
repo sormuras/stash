@@ -43,14 +43,14 @@ public class Generator {
   private final InterfaceDeclaration io;
   private final Quaestor quaestor;
 
-  Generator(Stash stash, InterfaceDeclaration declaration) {
+  Generator(ClassLoader loader, Stash stash, InterfaceDeclaration declaration) {
     this.stash = stash;
     this.declaration = declaration;
 
     this.crc32 = new CRC32();
     this.now = Instant.now();
     this.io = generateIO();
-    this.quaestor = new Quaestor(this);
+    this.quaestor = new Quaestor(this, loader);
   }
 
   public InterfaceDeclaration getInterfaceDeclaration() {

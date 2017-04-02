@@ -148,7 +148,7 @@ public class Processor extends AbstractProcessor {
     note("Interface %s was declared as:%s", stashAnnotated, unit.list(" "));
 
     // generate...
-    Generator generator = new Generator(stash, interfaceDeclaration);
+    Generator generator = new Generator(getClass().getClassLoader(), stash, interfaceDeclaration);
     generator.getQuaestor().getCustoms().putAll(stashlets);
     List<CompilationUnit> generatedUnits = generator.generate();
     for (CompilationUnit generated : generatedUnits) {
