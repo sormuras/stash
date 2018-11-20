@@ -1,9 +1,9 @@
 plugins {
-    id 'net.ltgt.apt' version '0.10'
+    id 'net.ltgt.apt' version '0.18'
 }
 
 dependencies {
-    apt(project(':stash-compiler'))
+    annotationProcessor(project(':stash-compiler'))
 
     compileOnly(project(':stash-api'))
 }

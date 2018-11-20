@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.zip.CRC32;
-import javax.annotation.Generated;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.MirroredTypeException;
 
@@ -66,7 +65,7 @@ public class Generator {
   }
 
   private Annotation buildAnnotationGenerated() {
-    Annotation generated = Annotation.annotation(Generated.class);
+    Annotation generated = Annotation.annotation(Deprecated.class);
     generated.addValue(getClass().getCanonicalName());
     generated.addValue(Stash.VERSION);
     generated.addObject("date", now.toString());
@@ -119,7 +118,7 @@ public class Generator {
   private CompilationUnit generateStash(CompilationUnit unit) {
     StashBuilder stashBuilder = new StashBuilder(this, unit);
     ClassDeclaration stashClass = stashBuilder.generate();
-    stashClass.addAnnotation(buildAnnotationGenerated());
+    // stashClass.addAnnotation(buildAnnotationGenerated());
     return unit;
   }
 
@@ -128,7 +127,7 @@ public class Generator {
     ClassDeclaration guardDeclaration = unit.declareClass(declaration.getName() + "Guard");
     guardDeclaration.setModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
     guardDeclaration.addInterface(declaration.toType());
-    guardDeclaration.addAnnotation(buildAnnotationGenerated());
+    // guardDeclaration.addAnnotation(buildAnnotationGenerated());
     return unit;
   }
 
@@ -137,7 +136,7 @@ public class Generator {
     String packageName = declaration.getCompilationUnit().getPackageName();
     CompilationUnit unit = CompilationUnit.of(packageName);
     InterfaceDeclaration ioDeclaration = unit.declareInterface(declaration.getName() + "IO");
-    ioDeclaration.addAnnotation(buildAnnotationGenerated());
+    // ioDeclaration.addAnnotation(buildAnnotationGenerated());
     return ioDeclaration;
   }
 

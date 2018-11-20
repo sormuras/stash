@@ -1,5 +1,5 @@
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.4.1'
+    gradleVersion = '4.10.2'
 }
 
 subprojects { project ->
@@ -9,7 +9,6 @@ subprojects { project ->
     apply plugin: 'eclipse'
 
     apply from: "$rootDir/gradle/format.gradle"
-    apply from: "$rootDir/gradle/jupiter.gradle"
 
     repositories {
         mavenCentral()
@@ -17,12 +16,8 @@ subprojects { project ->
     }
 
     dependencies {
-        // TODO revert to "junit-jupiter-api" when IDE(A) is updated to M4
-        testCompile ("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
-
-        // // TODO remove when IDE(A) is updated to M4 https://youtrack.jetbrains.com/issue/IDEA-170817
-        testRuntime("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}") // launcher to override bundled one
-        testRuntime("org.junit.platform:junit-platform-runner:${junitPlatformVersion}") // same for runner
+        testCompile ("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
+        testRuntime ("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
     }
 
     tasks.withType(JavaCompile) {
@@ -30,6 +25,10 @@ subprojects { project ->
         targetCompatibility = project.targetCompatibility
         options.encoding = 'UTF-8'
         options.compilerArgs << "-Xlint:deprecation" << "-Xlint:unchecked"
+    }
+    
+    test {
+        useJUnitPlatform()
     }
 
 }
