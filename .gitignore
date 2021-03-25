@@ -1,16 +1,5 @@
-# Gradle
-.gradle
-build/
-
-# Eclipse
-bin/
-.classpath
-.project
-.settings/
-
-# IntelliJ
+.bach/workspace/
 .idea/
-*.iml
-*.ipr
-*.iws
-*.uml
+
+*.jar
+!.bach/bin/*.jar

@@ -1,5 +1,0 @@
-rootProject.name = 'stash'
-
-include 'stash-api'
-include 'stash-compiler'
-include 'stash-demo'
